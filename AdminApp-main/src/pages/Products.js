@@ -179,7 +179,7 @@ const Products = () => {
   ).map((imgUrl, i) => (
     <img
       key={i}
-      src={`http://localhost:5000${imgUrl}`} // Adjust this if your backend URL is different
+      src={`https://adminapp-1-nk19.onrender.com${imgUrl}`} // Adjust this if your backend URL is different
       alt={`${product.title} ${i + 1}`}
       width="50"
       height="50"
