@@ -8,7 +8,7 @@ const Products = () => {
   const [featuredFilter, setFeaturedFilter] = useState('All');
   const [products, setProducts] = useState([]);
 
-  const API_URL = 'https://adminapp-1-nk19.onrender.com/products/all';
+  const API_URL = 'http://localhost:5000/products/all';
 
   useEffect(() => {
     fetchProducts();
@@ -31,7 +31,7 @@ const Products = () => {
   const handleDelete = async (id) => {
   if (!window.confirm('Are you sure you want to delete this product?')) return;
   try {
-    await axios.delete(`https://adminapp-1-nk19.onrender.com/products/${id}`);
+    await axios.delete(`http://localhost:5000/products/${id}`);
     fetchProducts();
   } catch (error) {
     console.error('Error deleting product:', error);
