@@ -31,7 +31,7 @@ const Products = () => {
   const handleDelete = async (id) => {
   if (!window.confirm('Are you sure you want to delete this product?')) return;
   try {
-    await axios.delete(`http://localhost:5000/products/${id}`);
+    await axios.delete(`http://adminapp-1-nk19.onrender.com/products/${id}`);
     fetchProducts();
   } catch (error) {
     console.error('Error deleting product:', error);
