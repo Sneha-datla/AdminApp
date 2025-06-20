@@ -29,15 +29,15 @@ const upload = multer({ storage });
 // ⬇️ Use `.array()` for multiple files
 router.post("/add", upload.array("image_urls", 10), async (req, res) => {
   const { productId, title, purity, price, stock, featured } = req.body;
-  const files = req.files;
+  const files = req.files || [];
 
   try {
     const imagePaths = files.map(file => `/uploads/${file.filename}`);
 
     const result = await pool.query(
-      `INSERT INTO products ( product_id, title, purity, price, stock, featured, image_urls) 
+      `INSERT INTO products (product_id, title, purity, price, stock, featured, image_urls) 
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [productId, title, purity, price, stock, featured, JSON.stringify(imagePaths)]
+      [productId, title, purity, price, stock, featured, imagePaths] // ✅ pass JS array directly
     );
 
     res.status(201).json(result.rows[0]);
@@ -46,6 +46,7 @@ router.post("/add", upload.array("image_urls", 10), async (req, res) => {
     res.status(500).json({ error: "Product creation failed" });
   }
 });
+
 router.get("/all", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM products");
