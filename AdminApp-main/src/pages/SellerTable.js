@@ -65,10 +65,10 @@ await axios.delete(`https://adminapp-1-nk19.onrender.com/seller/${id}`);
                 onClick={() => handleRowClick(product)}
               >
                 <td>
-  {(Array.isArray(product.image)
-    ? product.image
-    : typeof product.image === 'string'
-      ? JSON.parse(product.image)
+  {(Array.isArray(product.images)
+    ? product.images
+    : typeof product.images === 'string'
+      ? JSON.parse(product.images)
       : []
   ).map((imgUrl, i) => (
     <img
@@ -115,10 +115,10 @@ await axios.delete(`https://adminapp-1-nk19.onrender.com/seller/${id}`);
           <h5 className="mb-3">Product Details</h5>
           <div className="row">
             <div className="col-md-3">
-              <img src={activeProduct.image} alt={activeProduct.title} className="img-fluid" />
+              <img src={activeProduct.images} alt={activeProduct.name} className="img-fluid" />
             </div>
             <div className="col-md-9">
-              <p><strong>Name:</strong> {activeProduct.title}</p>
+              <p><strong>Name:</strong> {activeProduct.name}</p>
               <p><strong>Category:</strong> {activeProduct.category}</p>
               <p><strong>Weight:</strong> {Math.floor(Math.random() * 50) + 1} gm</p>
               <p><strong>Purity:</strong> {['22K', '24K'][Math.floor(Math.random() * 2)]}</p>
