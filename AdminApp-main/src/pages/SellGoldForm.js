@@ -89,7 +89,7 @@ const SellGoldForm = () => {
           type="text"
           name="name"
           placeholder="e.g. Gold Necklace"
-          value={formData.title}
+          value={formData.name}
           onChange={handleChange}
           style={styles.input}
         />
