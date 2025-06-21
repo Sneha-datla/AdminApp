@@ -45,7 +45,7 @@ const SignupForm = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/users/signup', {
+      const response = await axios.post('https://adminapp-1-nk19.onrender.com/users/signup', {
         fullName,
         email,
         phone,
