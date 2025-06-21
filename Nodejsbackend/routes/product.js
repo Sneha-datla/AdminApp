@@ -62,19 +62,45 @@ router.delete("/:id", async (req, res) => {
   const id = req.params.id;
 
   try {
-    const result = await pool.query("DELETE FROM products WHERE id = $1 RETURNING *", [id]);
+    console.log("Attempting to delete product with ID:", id);
+
+    const result = await pool.query(
+      "SELECT image_urls FROM products WHERE id = $1",
+      [id]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    res.status(200).json({ message: "Product deleted successfully", product: result.rows[0] });
+    let imageUrls = result.rows[0].image_urls;
+
+    // Parse image URLs safely
+    if (typeof imageUrls === "string") {
+      try {
+        imageUrls = JSON.parse(imageUrls);
+      } catch {
+        imageUrls = imageUrls.split(",").map(url => url.trim());
+      }
+    }
+
+    // Delete each image from filesystem
+    imageUrls.forEach((url) => {
+      const filePath = `.${url}`; // Assuming /uploads/...
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    });
+
+    // Delete product from database
+    await pool.query("DELETE FROM products WHERE id = $1", [id]);
+
+    res.status(200).json({ message: "Product deleted successfully" });
   } catch (err) {
     console.error("Error deleting product:", err.message);
     res.status(500).json({ error: "Failed to delete product" });
   }
 });
-
 
 
 
