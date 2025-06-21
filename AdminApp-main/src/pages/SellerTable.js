@@ -114,9 +114,27 @@ await axios.delete(`https://adminapp-1-nk19.onrender.com/seller/${id}`);
         <div className="card mt-4 p-3 shadow">
           <h5 className="mb-3">Product Details</h5>
           <div className="row">
-            <div className="col-md-3">
-              <img src={activeProduct.images} alt={activeProduct.name} className="img-fluid" />
-            </div>
+           <div className="col-md-3">
+  {(Array.isArray(activeProduct.images)
+    ? activeProduct.images
+    : typeof activeProduct.images === 'string'
+      ? JSON.parse(activeProduct.images)
+      : []
+  ).map((imgUrl, i) => (
+    <img
+      key={i}
+      src={
+        imgUrl.startsWith('/')
+          ? `https://adminapp-1-nk19.onrender.com${imgUrl}`
+          : `https://adminapp-1-nk19.onrender.com/uploads/${imgUrl}`
+      }
+      alt={`${activeProduct.name} ${i + 1}`}
+      className="img-fluid mb-2"
+      style={{ maxHeight: '150px', objectFit: 'cover', borderRadius: '4px', marginRight: '5px' }}
+    />
+  ))}
+</div>
+
             <div className="col-md-9">
               <p><strong>Name:</strong> {activeProduct.name}</p>
               <p><strong>Category:</strong> {activeProduct.category}</p>
