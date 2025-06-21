@@ -11,8 +11,8 @@ router.post('/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await pool.query(
-      'INSERT INTO users (full_name, email, phone, password, agreed_terms) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [fullName, email, phone, hashedPassword, true]
+      'INSERT INTO users (full_name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING *',
+      [fullName, email, phone, hashedPassword]
     );
 
     res.status(201).json({ message: 'User created', user: newUser.rows[0] });
