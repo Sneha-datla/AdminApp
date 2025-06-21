@@ -39,14 +39,14 @@ const SellGoldForm = () => {
       return;
     }
 
-    const formPayload = new FormData();
-    images.forEach((img) => formPayload.append('images', img));
+    const  formData = new FormData();
+    images.forEach((img) =>  formData.append('images', img));
     Object.entries(formData).forEach(([key, value]) => {
-      formPayload.append(key, value);
+       formData.append(key, value);
     });
 
     try {
-      const response = await axios.post('http://adminapp-1-nk19.onrender.com/seller/add', formPayload, {
+      const response = await axios.post(`http://adminapp-1-nk19.onrender.com/seller/add`,  formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
