@@ -65,8 +65,23 @@ await axios.delete(`https://adminapp-1-nk19.onrender.com/seller/${id}`);
                 onClick={() => handleRowClick(product)}
               >
                 <td>
-                  <img src={`https://adminapp-1-nk19.onrender.com${product.image}`} alt={product.name} width="50" />
-                </td>
+  {(Array.isArray(product.image)
+    ? product.image
+    : typeof product.image === 'string'
+      ? JSON.parse(product.image)
+      : []
+  ).map((imgUrl, i) => (
+    <img
+      key={i}
+      src={`https://adminapp-1-nk19.onrender.com${imgUrl}`}
+      alt={`${product.name} ${i + 1}`}
+      width="50"
+      height="50"
+      style={{ objectFit: 'cover', borderRadius: '4px', marginRight: '5px' }}
+    />
+  ))}
+</td>
+
                 <td>{product.name}</td>
                 <td>{product.category}</td>
                 <td>{Math.floor(Math.random() * 50) + 1} gm</td> {/* Mocked weight */}
