@@ -4,7 +4,7 @@ const cors = require("cors");
 const app = express();
 const productRoutes = require("./routes/product");
 const userRoutes = require("./routes/users"); //  import your user route
-const sellGoldRoutes = require("./routes/Seller"); //  import your user route
+const sellGoldRoutes = require("./routes/seller"); //  import your user route
 
 app.use(cors());
 app.use(express.json());
