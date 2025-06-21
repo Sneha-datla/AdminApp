@@ -54,5 +54,50 @@ router.post("/add", upload.array("images", 10), async (req, res) => {
     res.status(500).json({ error: "Failed to add seller gold product" });
   }
 });
+router.get("/all", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM sellergold ORDER BY id DESC");
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error fetching seller gold products:", err.message);
+    res.status(500).json({ error: "Failed to fetch seller gold products" });
+  }
+});
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // First, get the images associated with the product
+    const Result = await pool.query(
+      "SELECT images FROM sellergold WHERE id = $1",
+      [id]
+    );
+
+    if (Result.rows.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const imagePaths = Result.rows[0].images || [];
+
+    // Delete images from the filesystem
+    imagePaths.forEach((imagePath) => {
+      const filePath = imagePath.replace("/uploads/", "uploads/");
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.warn(`Failed to delete file: ${filePath}`, err.message);
+        }
+      });
+    });
+
+    // Delete the product from the database
+    await pool.query("DELETE FROM sellergold WHERE id = $1", [id]);
+
+    res.status(200).json({ message: "Seller gold product deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting seller gold product:", err.message);
+    res.status(500).json({ error: "Failed to delete seller gold product" });
+  }
+});
+
 
 module.exports = router;

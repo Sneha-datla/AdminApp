@@ -5,7 +5,7 @@ const SellerProductTable = () => {
   const [products, setProducts] = useState([]);
   const [activeProduct, setActiveProduct] = useState(null);
 
-  const API_URL = 'https://fakestoreapi.com/products/category/jewelery';
+  const API_URL = 'https://adminapp-1-nk19.onrender.com/seller/all';
 
   const fetchProducts = async () => {
     try {
@@ -20,7 +20,7 @@ const SellerProductTable = () => {
     if (window.confirm('Are you sure to delete this product?')) {
       try {
         // ⚠️ fakestoreapi does not support real deletion, just simulating it
-        await axios.delete(`https://fakestoreapi.com/products/${id}`);
+await axios.delete(`https://adminapp-1-nk19.onrender.com/seller/${id}`);
         alert("Delete simulated (fake store doesn't remove real data)");
         fetchProducts(); // Reload list
         setActiveProduct(null);
@@ -65,9 +65,9 @@ const SellerProductTable = () => {
                 onClick={() => handleRowClick(product)}
               >
                 <td>
-                  <img src={product.image} alt={product.title} width="50" />
+                  <img src={`https://adminapp-1-nk19.onrender.com${product.image}`} alt={product.name} width="50" />
                 </td>
-                <td>{product.title}</td>
+                <td>{product.name}</td>
                 <td>{product.category}</td>
                 <td>{Math.floor(Math.random() * 50) + 1} gm</td> {/* Mocked weight */}
                 <td>{['22K', '24K'][Math.floor(Math.random() * 2)]}</td> {/* Mocked purity */}
