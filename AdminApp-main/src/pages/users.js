@@ -21,7 +21,7 @@ const UserManagement = () => {
     const confirm = window.confirm('Are you sure you want to delete this user?');
     if (!confirm) return;
     try {
-      const res = await axios.delete(`http://localhost:5000/users/${id}`);
+      const res = await axios.delete(`https://adminapp-1-nk19.onrender.com/users/${id}`);
       console.log('User deleted:', res.data);
       alert(`Deleted user ID: ${id}`);
       fetchUsers();
