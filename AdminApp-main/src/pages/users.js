@@ -9,7 +9,7 @@ const UserManagement = () => {
   // Fetch users from API
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/users/all');
+      const res = await axios.get('https://adminapp-1-nk19.onrender.com/users/all');
       setUsers(res.data);
     } catch (error) {
       console.error('Error fetching users:', error);
