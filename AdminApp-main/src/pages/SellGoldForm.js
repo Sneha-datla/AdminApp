@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const SellGoldForm = () => {
   const [formData, setFormData] = useState({
-    title: '',
+    name: '',
     category: '',
     weight: '',
     purity: '',
@@ -33,8 +33,8 @@ const SellGoldForm = () => {
     e.preventDefault();
 
     // Validation
-    const { title, category, weight, purity, condition, price, description } = formData;
-    if (!title || !category || !weight || !purity || !condition || !price || !description) {
+    const { name, category, weight, purity, condition, price, description } = formData;
+    if (!name || !category || !weight || !purity || !condition || !price || !description) {
       setMessage('Please fill all fields.');
       return;
     }
@@ -87,7 +87,7 @@ const SellGoldForm = () => {
 
         <input
           type="text"
-          name="title"
+          name="name"
           placeholder="e.g. Gold Necklace"
           value={formData.title}
           onChange={handleChange}
