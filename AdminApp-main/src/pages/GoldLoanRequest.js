@@ -64,17 +64,30 @@ await axios.delete(`https://adminapp-1-nk19.onrender.com/loan/${id}`);
                 className={activeLoan?.id === loan.id ? 'table-primary' : ''}
                 onClick={() => handleRowClick(loan)}
               >
-                <td>
-                  <img src={loan.image} alt="gold item" width="50" />
-                </td>
-                <td>{loan.bankName}</td>
-                <td>{loan.fullName}</td>
-                <td>{loan.mobileNumber}</td>
+               <td>
+  {(Array.isArray(loan.image)
+    ? loan.image
+    : JSON.parse(loan.image)
+  ).map((imgUrl, i) => (
+    <img
+      key={i}
+      src={`https://adminapp-1-nk19.onrender.com/${imgUrl}`} // Adjust if needed
+      alt={`Gold item ${i + 1}`}
+      width="50"
+      height="50"
+      style={{ objectFit: 'cover', borderRadius: '4px', marginRight: '5px' }}
+    />
+  ))}
+</td>
+
+                <td>{loan.bank}</td>
+                <td>{loan.fullname}</td>
+                <td>{loan.mobile}</td>
                 <td>{loan.address}</td>
-                <td>{loan.goldWeight}</td>
-                <td>{loan.goldType}</td>
-                <td>{loan.idProof}</td>
-                <td>₹{loan.loanAmount}</td>
+                <td>{loan.goldweight}</td>
+                <td>{loan.goldtype}</td>
+                <td>{loan.idproof}</td>
+                <td>₹{loan.loanamount}</td>
                 <td>{loan.remarks}</td>
                 <td>
                   <button
@@ -105,14 +118,14 @@ await axios.delete(`https://adminapp-1-nk19.onrender.com/loan/${id}`);
               <img src={activeLoan.image} alt="Gold Item" className="img-fluid" />
             </div>
             <div className="col-md-9">
-              <p><strong>Bank Name:</strong> {activeLoan.bankName}</p>
-              <p><strong>Full Name:</strong> {activeLoan.fullName}</p>
-              <p><strong>Mobile Number:</strong> {activeLoan.mobileNumber}</p>
+              <p><strong>Bank Name:</strong> {activeLoan.bank}</p>
+              <p><strong>Full Name:</strong> {activeLoan.fullname}</p>
+              <p><strong>Mobile Number:</strong> {activeLoan.mobile}</p>
               <p><strong>Address:</strong> {activeLoan.address}</p>
-              <p><strong>Gold Weight:</strong> {activeLoan.goldWeight} gm</p>
-              <p><strong>Gold Type:</strong> {activeLoan.goldType}</p>
-              <p><strong>ID Proof Number:</strong> {activeLoan.idProof}</p>
-              <p><strong>Loan Amount:</strong> ₹{activeLoan.loanAmount}</p>
+              <p><strong>Gold Weight:</strong> {activeLoan.goldweight} gm</p>
+              <p><strong>Gold Type:</strong> {activeLoan.goldtype}</p>
+              <p><strong>ID Proof Number:</strong> {activeLoan.idproof}</p>
+              <p><strong>Loan Amount:</strong> ₹{activeLoan.loanamount}</p>
               <p><strong>Remarks:</strong> {activeLoan.remarks}</p>
             </div>
           </div>
