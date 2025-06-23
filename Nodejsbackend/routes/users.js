@@ -49,23 +49,27 @@ router.delete('/:id', async (req, res) => {
 });
 // login.js
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { identifier, password } = req.body; // identifier can be email or phone
 
   try {
-    const userResult = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const userResult = await pool.query(
+      'SELECT * FROM users WHERE email = $1 OR phone = $1',
+      [identifier]
+    );
+
     const user = userResult.rows[0];
+    if (!user) return res.status(401).json({ error: 'Invalid email/phone or password' });
 
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ error: 'Invalid email/phone or password' });
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
-
-    res.status(200).json({ message: 'Login successful', user: { id: user.id, username: user.username } });
+    res.status(200).json({ message: 'Login successful', user: { id: user.id, fullName: user.full_name } });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Login error' });
+    res.status(500).json({ error: 'Login failed' });
   }
 });
+
 
 
 module.exports = router;

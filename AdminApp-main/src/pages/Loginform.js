@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 const LoginForm = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    identifier: '', // Email or phone
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -20,17 +20,17 @@ const LoginForm = () => {
     setError('');
     setSuccess('');
 
-    const { username, password } = formData;
+    const { identifier, password } = formData;
 
-    if (!username || !password) {
+    if (!identifier || !password) {
       setError('Please enter both fields');
       return;
     }
 
     try {
       const response = await axios.post('https://adminapp-1-nk19.onrender.com/users/login', {
-        username,
-        password,
+        identifier, // could be email or phone
+      password,
       });
 
       setSuccess('Login successful!');
@@ -48,7 +48,7 @@ const LoginForm = () => {
       <form onSubmit={handleSubmit} style={styles.form}>
         <input
           type="text"
-          name="username"
+          name="identifier"
           placeholder="Email or Username"
           value={formData.username}
           onChange={handleChange}
