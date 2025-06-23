@@ -69,4 +69,47 @@ router.post("/add", upload.array("image", 5), async (req, res) => {
   }
 });
 
+
+router.get("/all",async(req,res)=>{
+    try{
+ const result=await pool.query("SELECT * FROM goldloanrequest ORDER BY id ASC")
+     res.status(200).json(result.rows);
+
+    }catch{ 
+    res.status(500).json({ error: "Failed to fetch products" });
+
+    }
+
+});
+
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // First fetch the record to get image paths
+    const getResult = await pool.query("SELECT image FROM goldloanrequest WHERE id = $1", [id]);
+
+    if (getResult.rows.length === 0) {
+      return res.status(404).json({ error: "Record not found" });
+    }
+
+    const imagePaths = getResult.rows[0].image;
+
+    // Delete images from disk
+    imagePaths.forEach((filePath) => {
+      fs.unlink(filePath, (err) => {
+        if (err) console.warn("Failed to delete image:", filePath);
+      });
+    });
+
+    // Delete record from database
+    await pool.query("DELETE FROM goldloanrequest WHERE id = $1", [id]);
+
+    res.json({ message: "Gold loan request deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting gold loan request:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;
