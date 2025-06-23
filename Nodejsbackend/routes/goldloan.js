@@ -43,8 +43,8 @@ router.post("/add", upload.array("images", 5), async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO GoldLoanRequest (
-         bank, fullname, mobile, address,
-        goldweight, goldtype, idproof, loanamount, remarks,image
+        image, bank, fullname, mobile, address,
+        goldweight, goldtype, idproof, loanamount, remarks
       ) VALUES (
         $1, $2, $3, $4, $5,
         $6, $7, $8, $9, $10
