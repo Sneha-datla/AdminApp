@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // POST: /api/goldloan/add
-router.post("/add", upload.array("images", 5), async (req, res) => {
+router.post("/add", upload.array("image", 5), async (req, res) => {
   try {
     const {
       bank,
