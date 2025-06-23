@@ -1,47 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const ListingsModeration = () => {
-  const initialListings = [
-    {
-      id: 'GL001',
-      title: '24K Gold Necklace',
-      description: 'Premium handcrafted gold necklace with traditional design',
-      purity: '24K',
-      price: 2450,
-      image: 'https://via.placeholder.com/50x50?text=Necklace',
-      status: 'Pending',
-    },
-    {
-      id: 'GL002',
-      title: 'Diamond Gold Earrings',
-      description: 'Elegant pair of 22K gold earrings featuring brilliant diamonds',
-      purity: '22K',
-      price: 1850,
-      image: 'https://via.placeholder.com/50x50?text=Earrings',
-      status: 'Pending',
-    },
-    {
-      id: 'GL003',
-      title: 'Vintage Gold Bracelet',
-      description: 'Vintage inspired 18K gold bracelet with intricate patterns',
-      purity: '18K',
-      price: 980,
-      image: 'https://via.placeholder.com/50x50?text=Bracelet',
-      status: 'Pending',
-    },
-    {
-      id: 'GL004',
-      title: 'Modern Gold Ring',
-      description: 'Contemporary 22K gold ring featuring geometric design',
-      purity: '22K',
-      price: 650,
-      image: 'https://via.placeholder.com/50x50?text=Ring',
-      status: 'Pending',
-    },
-  ];
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [listings, setListings] = useState(initialListings);
+  // Fetch listings from the API
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        const response = await axios.get('https://adminapp-1-nk19.onrender.com/order/all'); // Replace with your actual URL
+        setListings(response.data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch listings:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchListings();
+  }, []);
+
+  
 
   const handleStatusChange = (id, newStatus) => {
     const updated = listings.map(item =>
