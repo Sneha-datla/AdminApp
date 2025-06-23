@@ -4,13 +4,13 @@ import axios from 'axios';
 const GoldLoanRequestForm = () => {
   const [formData, setFormData] = useState({
     bank: '',
-    fullName: '',
+    fullname: '',
     mobile: '',
     address: '',
-    goldWeight: '',
-    goldType: '',
-    idProof: '',
-    loanAmount: '',
+    goldweight: '',
+    goldtype: '',
+    idproof: '',
+    loanamount: '',
     remarks: '',
   });
 
@@ -35,13 +35,13 @@ const GoldLoanRequestForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const {
-      bank, fullName, mobile, address,
-      goldWeight, goldType, idProof, loanAmount
+      bank, fullname, mobile, address,
+      goldweight, goldtype, idproof, loanamount
     } = formData;
 
     if (
-      !bank || !fullName || !mobile || !address ||
-      !goldWeight || !goldType || !idProof || !loanAmount
+      !bank || !fullname || !mobile || !address ||
+      !goldweight || !goldtype || !idproof || !loanamount
     ) {
       setMessage('Please fill all required fields.');
       return;
@@ -59,7 +59,7 @@ const GoldLoanRequestForm = () => {
     });
 
     try {
-      const response = await axios.post('https://your-api-endpoint.com/gold-loan-request', data, {
+      const response = await axios.post('https://adminapp-1-nk19.onrender.com/loan/add', data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -70,13 +70,13 @@ const GoldLoanRequestForm = () => {
 
       setFormData({
         bank: '',
-        fullName: '',
+        fullname: '',
         mobile: '',
         address: '',
-        goldWeight: '',
-        goldType: '',
-        idProof: '',
-        loanAmount: '',
+        goldweight: '',
+        goldtype: '',
+        idproof: '',
+        loanamount: '',
         remarks: '',
       });
       setImages([]);
@@ -110,7 +110,7 @@ const GoldLoanRequestForm = () => {
 
         <input
           type="text"
-          name="fullName"
+          name="fullname"
           placeholder="Full Name"
           value={formData.fullName}
           onChange={handleChange}
@@ -137,7 +137,7 @@ const GoldLoanRequestForm = () => {
 
         <input
           type="number"
-          name="goldWeight"
+          name="goldweight"
           placeholder="Gold Weight in grams"
           value={formData.goldWeight}
           onChange={handleChange}
@@ -146,7 +146,7 @@ const GoldLoanRequestForm = () => {
 
         <input
           type="text"
-          name="goldType"
+          name="goldtype"
           placeholder="Gold Type (e.g., Chain, Coin)"
           value={formData.goldType}
           onChange={handleChange}
@@ -155,7 +155,7 @@ const GoldLoanRequestForm = () => {
 
         <input
           type="text"
-          name="idProof"
+          name="idproof"
           placeholder="ID Proof (e.g., Aadhar, PAN)"
           value={formData.idProof}
           onChange={handleChange}
@@ -164,7 +164,7 @@ const GoldLoanRequestForm = () => {
 
         <input
           type="number"
-          name="loanAmount"
+          name="loanamount"
           placeholder="Expected Loan Amount"
           value={formData.loanAmount}
           onChange={handleChange}
