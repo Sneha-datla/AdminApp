@@ -6,11 +6,14 @@ const ListingsModeration = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch listings from the API
+  // Utility to normalize status
+  const normalizeStatus = status => status?.trim().toLowerCase();
+
+  // Fetch listings from API
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const response = await axios.get('https://adminapp-1-nk19.onrender.com/order/all'); // Replace with your actual URL
+        const response = await axios.get('https://adminapp-1-nk19.onrender.com/order/all'); // Replace with your actual API
         setListings(response.data);
         setLoading(false);
       } catch (error) {
@@ -22,8 +25,7 @@ const ListingsModeration = () => {
     fetchListings();
   }, []);
 
-  
-
+  // Handle Approve/Reject
   const handleStatusChange = (id, newStatus) => {
     const updated = listings.map(item =>
       item.id === id ? { ...item, status: newStatus } : item
@@ -31,7 +33,11 @@ const ListingsModeration = () => {
     setListings(updated);
   };
 
-  const statusCount = type => listings.filter(l => l.status === type).length;
+  // Count by status
+  const statusCount = type =>
+    listings.filter(l => normalizeStatus(l.status) === normalizeStatus(type)).length;
+
+  if (loading) return <div className="text-center mt-5">Loading listings...</div>;
 
   return (
     <div className="container mt-4 p-4 bg-light rounded shadow-sm">
@@ -77,7 +83,11 @@ const ListingsModeration = () => {
           {listings.map(item => (
             <tr key={item.id}>
               <td>
-                <img src={item.image} alt="product" style={{ width: 50, height: 50, objectFit: 'cover' }} />
+                <img
+                  src={item.image}
+                  alt="product"
+                  style={{ width: 50, height: 50, objectFit: 'cover' }}
+                />
               </td>
               <td>
                 <strong>{item.title}</strong><br />
@@ -90,8 +100,10 @@ const ListingsModeration = () => {
               <td>${item.price.toLocaleString()}</td>
               <td>
                 <span className={`badge ${
-                  item.status === 'Pending' ? 'bg-warning text-dark'
-                    : item.status === 'Approved' ? 'bg-success'
+                  normalizeStatus(item.status) === 'pending'
+                    ? 'bg-warning text-dark'
+                    : normalizeStatus(item.status) === 'approved'
+                    ? 'bg-success'
                     : 'bg-danger'
                 }`}>
                   {item.status}
@@ -101,14 +113,14 @@ const ListingsModeration = () => {
                 <button
                   className="btn btn-sm btn-success me-2"
                   onClick={() => handleStatusChange(item.id, 'Approved')}
-                  disabled={item.status === 'Approved'}
+                  disabled={normalizeStatus(item.status) === 'approved'}
                 >
                   ✅ Approve
                 </button>
                 <button
                   className="btn btn-sm btn-danger"
                   onClick={() => handleStatusChange(item.id, 'Rejected')}
-                  disabled={item.status === 'Rejected'}
+                  disabled={normalizeStatus(item.status) === 'rejected'}
                 >
                   ❌ Reject
                 </button>
@@ -119,7 +131,7 @@ const ListingsModeration = () => {
       </table>
 
       <div className="d-flex justify-content-between align-items-center mt-3">
-        <small>Showing 1–4 of {listings.length} listings</small>
+        <small>Showing 1–{listings.length} of {listings.length} listings</small>
         <nav>
           <ul className="pagination pagination-sm mb-0">
             <li className="page-item active"><button className="page-link">1</button></li>
