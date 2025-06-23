@@ -47,6 +47,25 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete user' });
   }
 });
+// login.js
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const userResult = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const user = userResult.rows[0];
+
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+    res.status(200).json({ message: 'Login successful', user: { id: user.id, username: user.username } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Login error' });
+  }
+});
 
 
 module.exports = router;
