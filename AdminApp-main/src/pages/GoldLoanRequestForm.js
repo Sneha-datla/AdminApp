@@ -53,7 +53,7 @@ const GoldLoanRequestForm = () => {
     }
 
     const data = new FormData();
-    images.forEach((img) => data.append('images', img));
+    images.forEach((img) => data.append('image', img));
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
     });
