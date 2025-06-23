@@ -42,7 +42,7 @@ router.post("/add", upload.array("images", 5), async (req, res) => {
     const imagePaths = req.files.map(file => file.path);
 
     const result = await pool.query(
-      `INSERT INTO GoldLoanRequest (
+      `INSERT INTO goldloanrequest (
         image, bank, fullname, mobile, address,
         goldweight, goldtype, idproof, loanamount, remarks
       ) VALUES (
