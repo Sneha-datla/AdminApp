@@ -1,18 +1,40 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios"; 
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    if (email === "admin@example.com" && password === "admin123") {
-      navigate("/Dashboard"); // redirect on successful login
-    } else {
-      alert("Invalid credentials. Try admin@example.com / admin123");
-    }
-  };
+const handleLogin = async () => {
+  if (!email || !password) {
+    alert("Please enter both email and password.");
+    return;
+  }
+
+  try {
+    const response = await axios.post(
+      "https://adminapp-1-nk19.onrender.com/users/login",
+      {
+        identifier: email,
+        password: password,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("Login successful:", response.data);
+    // Optionally store user data or token here
+    navigate("/Dashboard"); // Redirect on successful login
+  } catch (err) {
+    console.error("Login error:", err);
+    alert("Invalid email or password");
+  }
+};
 
   return (
     <div style={styles.container}>
