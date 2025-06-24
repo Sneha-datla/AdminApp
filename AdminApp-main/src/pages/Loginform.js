@@ -15,32 +15,42 @@ const LoginForm = () => {
     setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setSuccess('');
 
-    const { identifier, password } = formData;
+  const { identifier, password } = formData;
 
-    if (!identifier || !password) {
-      setError('Please enter both fields');
-      return;
-    }
+  if (!identifier || !password) {
+    setError('Please enter both fields');
+    return;
+  }
 
-    try {
-      const response = await axios.post('https://adminapp-1-nk19.onrender.com/users/login', {
-        identifier, // could be email or phone
-      password,
-      });
+  try {
+    const response = await axios.post(
+      'https://adminapp-1-nk19.onrender.com/users/login',
+      {
+        identifier,
+        password,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-      setSuccess('Login successful!');
-      console.log('Login Response:', response.data);
-      // You can redirect or store token here
-    } catch (err) {
-      setError('Invalid credentials');
-      console.error(err);
-    }
-  };
+    setSuccess('Login successful!');
+    console.log('Login Response:', response.data);
+    // You can redirect or store token here
+  } catch (err) {
+    setError('Invalid credentials');
+    console.error(err);
+  }
+};
+
+
 
   return (
     <div style={styles.container}>
