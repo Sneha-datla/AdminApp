@@ -15,35 +15,28 @@ const LoginForm = () => {
     setError('');
   };
 
- const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
   setSuccess('');
 
-  const { identifier, password } = formData;
-
-  if (!identifier || !password) {
-    setError('Please enter both fields');
-    return;
-  }
+  const form = new FormData();
+  form.append('identifier', formData.identifier);
+  form.append('password', formData.password);
 
   try {
     const response = await axios.post(
       'https://adminapp-1-nk19.onrender.com/users/login',
-      {
-        identifier,
-        password,
-      },
+      form,
       {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'multipart/form-data', // 👈 Important!
         },
       }
     );
 
     setSuccess('Login successful!');
     console.log('Login Response:', response.data);
-    // You can redirect or store token here
   } catch (err) {
     setError('Invalid credentials');
     console.error(err);
