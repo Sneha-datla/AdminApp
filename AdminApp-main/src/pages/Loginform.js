@@ -50,7 +50,7 @@ const LoginForm = () => {
           type="text"
           name="identifier"
           placeholder="Email or Username"
-          value={formData.username}
+          value={formData.identifier}
           onChange={handleChange}
           style={styles.input}
         />
