@@ -70,6 +70,50 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Update user route
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { fullName, email, phone, password } = req.body;
+
+  try {
+    // Check if password is provided and hash it if so
+    let hashedPassword = null;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
+    // Update user fields conditionally
+    const updateQuery = `
+      UPDATE users
+      SET full_name = COALESCE($1, full_name),
+          email = COALESCE($2, email),
+          phone = COALESCE($3, phone),
+          password = COALESCE($4, password)
+      WHERE id = $5
+      RETURNING id, full_name, email, phone
+    `;
+
+    const values = [
+      fullName || null,
+      email || null,
+      phone || null,
+      hashedPassword || null,
+      id
+    ];
+
+    const result = await pool.query(updateQuery, values);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'User updated', user: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
 
 
 module.exports = router;
