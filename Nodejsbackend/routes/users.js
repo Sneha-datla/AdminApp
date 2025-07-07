@@ -113,6 +113,37 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to update user' });
   }
 });
+app.post('/addresses', async (req, res) => {
+  const {
+    userId,
+    name,
+    mobile,
+    pincode,
+    flat,
+    street,
+    cod,
+    city,
+    state,
+    landmark,
+    addressType,
+  } = req.body;
+
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+  try {
+    await pool.query(
+      `INSERT INTO addresses
+        (user_id, name, mobile, pincode, flat, street, cod, city, state, landmark, address_type)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [userId, name, mobile, pincode, flat, street, cod, city, state, landmark, addressType]
+    );
+
+    res.status(200).json({ message: 'Address saved' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Database error' });
+  }
+});
 
 
 
