@@ -113,7 +113,7 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to update user' });
   }
 });
-app.post('/addresses', async (req, res) => {
+router.post('/addresses', async (req, res) => {
   const {
     userId,
     name,
