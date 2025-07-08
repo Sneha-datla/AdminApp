@@ -144,6 +144,11 @@ router.post('/addresses', async (req, res) => {
     res.status(500).json({ message: 'Database error' });
   }
 });
+router.get('/loginaddress', async (req, res) => {
+  const userId = req.query.userId;
+  const result = await pool.query('SELECT * FROM addresses WHERE user_id = $1', [userId]);
+  res.json(result.rows);
+});
 
 
 
