@@ -17,6 +17,8 @@ import SellGoldForm from './pages/SellGoldForm';
 import GoldLoanRequestForm from './pages/GoldLoanRequestForm';
 import AddDeliveryAddress from './pages/addDeliveryAddress';
 import SelectDeliveryAddress from './pages/SelectDeliveryAddress';
+import Editprofile from './pages/editprofile';
+
 import './App.css';
 
 const App = () => (
@@ -40,6 +42,8 @@ const App = () => (
           <Route path="/GoldLoanRequestForm" element={<GoldLoanRequestForm/>} />
           <Route path="/addAddress" element={<AddDeliveryAddress/>}/>
           <Route path="/selectDelivery" element={<SelectDeliveryAddress/>}/>
+           <Route path="/EditProfile" element={<Editprofile/>}/>
+
         </Routes>
       </div>
     </div>

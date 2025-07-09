@@ -15,9 +15,10 @@ const Sidebar = () => (
       <li><Link to="/GoldLoanRequest"><FaUsers style={{ marginRight: '10px' }} />GoldLoanRequest</Link></li>
       <li><Link to="/signup">Signup</Link></li>
       <li><Link to="/Login">Login</Link></li>
-        <li><Link to="/addAddress">addDeliveryAddress</Link></li>
-      <li><Link to="/selectDelivery">Selectaddress</Link></li>
-      <li><Link to="/GoldLoanRequestForm">GoldLoanRequestForm</Link></li>
+      <li><Link to="/addAddress">addDeliveryAddress</Link></li>
+     <li><Link to="/selectDelivery">Selectaddress</Link></li>
+     <li><Link to="/EditProfile">editProfileScreen</Link></li>
+     <li><Link to="/GoldLoanRequestForm">GoldLoanRequestForm</Link></li>
       <li><Link to="/SellGoldform">SellGoldForm</Link></li>
        
     </ul>
