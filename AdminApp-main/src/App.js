@@ -15,7 +15,7 @@ import SignupForm from './pages/signupform';
 import LoginForm from './pages/Loginform';
 import SellGoldForm from './pages/SellGoldForm';
 import GoldLoanRequestForm from './pages/GoldLoanRequestForm';
-import AddDeliveryAddress from './pages/AddDeliveryAddress';
+import AddDeliveryAddress from './pages/addDeliveryAddress';
 import SelectDeliveryAddress from './pages/SelectDeliveryAddress';
 import './App.css';
 
@@ -38,7 +38,7 @@ const App = () => (
           <Route path="/Login" element={<LoginForm/>} />
           <Route path="/SellGoldform" element={<SellGoldForm/>} />
           <Route path="/GoldLoanRequestForm" element={<GoldLoanRequestForm/>} />
- <Route path="/addAddress" element={<AddDeliveryAddress/>}/>
+          <Route path="/addAddress" element={<AddDeliveryAddress/>}/>
           <Route path="/selectDelivery" element={<SelectDeliveryAddress/>}/>
         </Routes>
       </div>
