@@ -1,29 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const EditProfile = () => {
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    mobile: '',
-    password: '',
+    fullName: 'Rahul Sharma',
+    email: 'rahul.sharma@email.com',
+    mobile: '+91 9876543210',
+    password: 'password123',
     showPassword: false,
   });
-
-  // Load user from localStorage
-  const user = JSON.parse(localStorage.getItem('user'));
-  const userId = user?.id;
-
-  useEffect(() => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        fullName: user.fullName || '',
-        email: user.email || '',
-        mobile: user.mobile || '',
-        password: '', // Leave password empty for security
-      }));
-    }
-  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,35 +24,10 @@ const EditProfile = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    try {
-      const response = await fetch(`https://adminapp-1-nk19.onrender.com/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
-          mobile: formData.mobile,
-          password: formData.password,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update user');
-
-      const updatedUser = await response.json();
-
-      // Update localStorage
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-
-      alert('Changes saved successfully!');
-    } catch (error) {
-      console.error(error);
-      alert('Error updating profile.');
-    }
+    alert('Changes saved!');
+    console.log(formData);
   };
 
   const styles = {
@@ -169,9 +128,7 @@ const EditProfile = () => {
           </span>
         </div>
 
-        <button type="submit" style={styles.button}>
-          Save Changes
-        </button>
+        <button type="submit" style={styles.button}>Save Changes</button>
       </form>
     </div>
   );
