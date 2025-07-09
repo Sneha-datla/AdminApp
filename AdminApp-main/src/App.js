@@ -15,6 +15,8 @@ import SignupForm from './pages/signupform';
 import LoginForm from './pages/Loginform';
 import SellGoldForm from './pages/SellGoldForm';
 import GoldLoanRequestForm from './pages/GoldLoanRequestForm';
+import AddDeliveryAddress from './pages/addDeliveryAddress';
+import SelectDeliveryAddress from './pages/SelectDeliveryAddress';
 import './App.css';
 
 const App = () => (
