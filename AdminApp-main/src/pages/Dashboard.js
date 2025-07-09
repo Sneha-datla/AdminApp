@@ -1,10 +1,17 @@
 import React from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { useNavigate } from 'react-router-dom';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
 
 const Dashboard = () => {
+      const navigate = useNavigate();
+
+    const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/");
+  };
   const lineData = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [{
@@ -27,6 +34,11 @@ const Dashboard = () => {
 
   return (
     <div>
+       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px' }}>
+        <button onClick={handleLogout} style={{ padding: '8px 16px', backgroundColor: '#e38e00', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          Logout
+        </button>
+      </div>
       <div className="cards">
         <div className="card">
           <h4>Total Users</h4>
