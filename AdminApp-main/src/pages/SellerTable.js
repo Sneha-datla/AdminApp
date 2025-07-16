@@ -5,7 +5,7 @@ const SellerProductTable = () => {
   const [products, setProducts] = useState([]);
   const [activeProduct, setActiveProduct] = useState(null);
 
-  const API_URL = 'https://adminapp-1-nk19.onrender.com/seller/all';
+  const API_URL = 'https://adminapp-1-gack.onrender.com/seller/all';
 
   const fetchProducts = async () => {
     try {
@@ -20,7 +20,7 @@ const SellerProductTable = () => {
     if (window.confirm('Are you sure to delete this product?')) {
       try {
         // ⚠️ fakestoreapi does not support real deletion, just simulating it
-await axios.delete(`https://adminapp-1-nk19.onrender.com/seller/${id}`);
+await axios.delete(`https://adminapp-1-gack.onrender.com/seller/${id}`);
         alert("Delete simulated (fake store doesn't remove real data)");
         fetchProducts(); // Reload list
         setActiveProduct(null);
@@ -73,7 +73,7 @@ await axios.delete(`https://adminapp-1-nk19.onrender.com/seller/${id}`);
   ).map((imgUrl, i) => (
     <img
       key={i}
-      src={`https://adminapp-1-nk19.onrender.com${imgUrl}`}
+      src={`https://adminapp-1-gack.onrender.com${imgUrl}`}
       alt={`${product.name} ${i + 1}`}
       width="50"
       height="50"

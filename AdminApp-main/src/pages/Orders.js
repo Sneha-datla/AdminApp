@@ -13,7 +13,7 @@ const ListingsModeration = () => {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const response = await axios.get('https://adminapp-1-nk19.onrender.com/order/all'); // Replace with your actual API
+        const response = await axios.get('https://adminapp-1-gack.onrender.com/order/all'); // Replace with your actual API
         setListings(response.data);
         setLoading(false);
       } catch (error) {

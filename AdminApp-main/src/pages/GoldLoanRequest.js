@@ -5,7 +5,7 @@ const GoldLoanTable = () => {
   const [loans, setLoans] = useState([]);
   const [activeLoan, setActiveLoan] = useState(null);
 
-  const API_URL = 'https://adminapp-1-nk19.onrender.com/loan/all';
+  const API_URL = 'https://adminapp-1-gack.onrender.com/loan/all';
 
   const fetchLoans = async () => {
     try {
@@ -19,7 +19,7 @@ const GoldLoanTable = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure to delete this loan request?')) {
       try {
-await axios.delete(`https://adminapp-1-nk19.onrender.com/loan/${id}`);
+await axios.delete(`https://adminapp-1-gack.onrender.com/loan/${id}`);
         fetchLoans();
         setActiveLoan(null);
       } catch (error) {
@@ -71,7 +71,7 @@ await axios.delete(`https://adminapp-1-nk19.onrender.com/loan/${id}`);
   ).map((imgUrl, i) => (
     <img
       key={i}
-      src={`https://adminapp-1-nk19.onrender.com/${imgUrl}`} // Adjust if needed
+      src={`https://adminapp-1-gack.onrender.com/${imgUrl}`} // Adjust if needed
       alt={`Gold item ${i + 1}`}
       width="50"
       height="50"
