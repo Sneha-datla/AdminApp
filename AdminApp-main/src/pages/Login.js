@@ -27,14 +27,23 @@ const handleLogin = async () => {
       }
     );
 
-    console.log("Login successful:", response.data);
-    // Optionally store user data or token here
-    navigate("/Dashboard"); // Redirect on successful login
+    const user = response.data?.user;
+
+    if (user) {
+      // ✅ Store user info in localStorage
+      localStorage.setItem("user", JSON.stringify(user));
+      console.log("Login successful:", user);
+      navigate("/Dashboard"); // Redirect on successful login
+    } else {
+      alert("Login failed. User data not returned.");
+    }
+
   } catch (err) {
     console.error("Login error:", err);
     alert("Invalid email or password");
   }
 };
+
 
   return (
     <div style={styles.container}>
