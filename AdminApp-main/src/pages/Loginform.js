@@ -30,18 +30,27 @@ const handleSubmit = async (e) => {
       form,
       {
         headers: {
-          'Content-Type': 'multipart/form-data', // 👈 Important!
+          'Content-Type': 'multipart/form-data',
         },
       }
     );
 
-    setSuccess('Login successful!');
-    console.log('Login Response:', response.data);
+    const user = response.data?.user; // make sure your API returns user data like { user: { id, name, ... } }
+
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user)); // ✅ Store in localStorage
+      setSuccess('Login successful!');
+      console.log('Login Response:', user);
+    } else {
+      setError('Invalid user data received');
+    }
+
   } catch (err) {
     setError('Invalid credentials');
     console.error(err);
   }
 };
+
 
 
 
