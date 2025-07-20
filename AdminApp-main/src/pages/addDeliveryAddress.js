@@ -34,7 +34,10 @@ const AddDeliveryAddress = () => {
 
     // ✅ Get logged-in user from localStorage
     const user = JSON.parse(localStorage.getItem('user'));
+    console.log(localStorage.getItem('user'));
+
     const userId = user?.id;
+
 console.log('User from localStorage:', user);
   console.log('Extracted userId:', userId);
     if (!userId) {
