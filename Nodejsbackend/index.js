@@ -12,7 +12,7 @@ const goldloanRoutes = require("./routes/goldloan"); //  import your user route
 
 app.use(cors());
 app.use(express.json());
-const serviceAccount = require("./serviceAccountKey.json"); // Use env var for Render
+const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
