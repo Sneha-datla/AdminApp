@@ -1,29 +1,26 @@
 const express = require('express');
 const router = express.Router();
+const pool = require('../db'); // your PostgreSQL pool
 const bcrypt = require('bcrypt');
-const { db } = require("../firebase"); 
 
 // Signup Route
-router.post("/signup", async (req, res) => {
+router.post('/signup', async (req, res) => {
   const { fullName, email, phone, password } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const userRef = await db.collection("users").add({
-      fullName,
-      email,
-      phone,
-      password: hashedPassword,
-    });
 
-    const user = await userRef.get();
-    res.status(201).json({ message: "User created", user: { id: userRef.id, ...user.data() } });
+    const newUser = await pool.query(
+      'INSERT INTO users (full_name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING *',
+      [fullName, email, phone, hashedPassword]
+    );
+
+    res.status(201).json({ message: 'User created', user: newUser.rows[0] });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to create user" });
+    res.status(500).json({ error: 'Failed to create user' });
   }
 });
-
 router.get('/all', async (req, res) => {
   try {
     const users = await pool.query('SELECT id, full_name, email, phone FROM users');
