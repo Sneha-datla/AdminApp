@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const db = require("firebase-admin").firestore();
+const { db } = require("../firebase"); 
 
 // Signup Route
 router.post("/signup", async (req, res) => {
