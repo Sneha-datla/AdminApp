@@ -1,35 +1,61 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const pool = require('../db'); // your PostgreSQL pool
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcryptjs");
+const { db } = require("../firebase"); // adjust the path if needed
 
-// Signup Route
-router.post('/signup', async (req, res) => {
+// 🔐 Signup - Add new user to Firestore
+router.post("/signup", async (req, res) => {
   const { fullName, email, phone, password } = req.body;
 
   try {
+    // Check if user already exists
+    const snapshot = await db.collection("users").where("email", "==", email).get();
+    if (!snapshot.empty) {
+      return res.status(400).json({ error: "User with this email already exists" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await pool.query(
-      'INSERT INTO users (full_name, email, phone, password) VALUES ($1, $2, $3, $4) RETURNING *',
-      [fullName, email, phone, hashedPassword]
-    );
+    const newUser = {
+      fullName,
+      email,
+      phone,
+      password: hashedPassword,
+      createdAt: new Date().toISOString(),
+    };
 
-    res.status(201).json({ message: 'User created', user: newUser.rows[0] });
+    const docRef = await db.collection("users").add(newUser);
+
+    res.status(201).json({ message: "User created", id: docRef.id });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to create user' });
+    console.error("Signup Error:", err);
+    res.status(500).json({ error: "Failed to create user" });
   }
 });
-router.get('/all', async (req, res) => {
+
+// 👥 Get all users (excluding password)
+router.get("/all", async (req, res) => {
   try {
-    const users = await pool.query('SELECT id, full_name, email, phone FROM users');
-    res.status(200).json(users.rows);
+    const snapshot = await db.collection("users").get();
+    const users = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+      };
+    });
+
+    res.status(200).json(users);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    console.error("Fetch Error:", err);
+    res.status(500).json({ error: "Failed to fetch users" });
   }
 });
+
+
+
 // Delete User by ID
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
