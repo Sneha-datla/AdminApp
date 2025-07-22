@@ -1,6 +1,8 @@
 // index.js
 const express = require("express");
 const cors = require("cors");
+const admin = require("firebase-admin");
+
 const app = express();
 const productRoutes = require("./routes/product");
 const userRoutes = require("./routes/users"); //  import your user route
@@ -10,6 +12,12 @@ const goldloanRoutes = require("./routes/goldloan"); //  import your user route
 
 app.use(cors());
 app.use(express.json());
+const serviceAccount = require("./serviceAccountKey.json"); // Use env var for Render
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
 app.use("/uploads", express.static("uploads")); // serve images
 app.use("/products", productRoutes);
 app.use("/users", userRoutes); 
