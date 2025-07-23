@@ -1,29 +1,27 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
-const { db } = require("../firebase"); // adjust the path if needed
-
-// 🔐 Signup - Add new user to Firestore
-const counterRef = db.collection("counters").doc("users");
+const { db } = require("../firebase"); // your Firestore init
 
 const userRef = db.collection("users");
+const counterRef = db.collection("counters").doc("users");
 
+// 🔐 SIGNUP
 router.post("/signup", async (req, res) => {
   const { fullName, email, phone, password } = req.body;
 
   try {
-    // Check if user already exists
+    // Check if user exists
     const snapshot = await userRef.where("email", "==", email).get();
     if (!snapshot.empty) {
-      return res.status(400).json({ error: "User with this email already exists" });
+      return res.status(400).json({ error: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Get the current counter value
+    // Generate next user ID
     const counterDoc = await counterRef.get();
     let currentId = 1;
-
     if (counterDoc.exists) {
       currentId = counterDoc.data().value + 1;
     }
@@ -37,10 +35,7 @@ router.post("/signup", async (req, res) => {
       userId: currentId,
     };
 
-    // Add user with ID = currentId
     await userRef.doc(currentId.toString()).set(newUser);
-
-    // Update the counter
     await counterRef.set({ value: currentId });
 
     res.status(201).json({ message: "User created", id: currentId });
@@ -50,11 +45,49 @@ router.post("/signup", async (req, res) => {
   }
 });
 
+// 🔓 LOGIN
+router.post("/login", async (req, res) => {
+  const { identifier, password } = req.body;
 
-// 👥 Get all users (excluding password)
+  try {
+    const snapshot = await userRef
+      .where("email", "==", identifier)
+      .get();
+
+    const phoneSnapshot = await userRef
+      .where("phone", "==", identifier)
+      .get();
+
+    let userDoc = snapshot.empty ? phoneSnapshot.docs[0] : snapshot.docs[0];
+
+    if (!userDoc) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const user = userDoc.data();
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    res.status(200).json({
+      message: "Login successful",
+      user: {
+        id: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+      },
+    });
+  } catch (err) {
+    console.error("Login Error:", err);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// 👥 GET ALL USERS (no passwords)
 router.get("/all", async (req, res) => {
   try {
-    const snapshot = await db.collection("users").get();
+    const snapshot = await userRef.get();
     const users = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
@@ -64,111 +97,14 @@ router.get("/all", async (req, res) => {
         phone: data.phone,
       };
     });
-
     res.status(200).json(users);
   } catch (err) {
-    console.error("Fetch Error:", err);
+    console.error("Fetch Users Error:", err);
     res.status(500).json({ error: "Failed to fetch users" });
   }
 });
 
-
-
-// Delete User by ID
-router.delete("/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const userDoc = await userRef.doc(id).get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    await userRef.doc(id).delete();
-    res.status(200).json({ message: "User deleted" });
-  } catch (err) {
-    console.error("Delete Error:", err);
-    res.status(500).json({ error: "Failed to delete user" });
-  }
-});
-
-// 🔐 Login by email or phone
-router.post("/login", async (req, res) => {
-  const { identifier, password } = req.body;
-
-  try {
-    const snapshot = await userRef
-      .where("email", "==", identifier)
-      .get();
-
-    let userDoc = null;
-
-    if (snapshot.empty) {
-      const phoneSnap = await userRef.where("phone", "==", identifier).get();
-      if (!phoneSnap.empty) {
-        userDoc = phoneSnap.docs[0];
-      }
-    } else {
-      userDoc = snapshot.docs[0];
-    }
-
-    if (!userDoc) {
-      return res.status(401).json({ error: "Invalid email/phone or password" });
-    }
-
-    const user = userDoc.data();
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Invalid email/phone or password" });
-    }
-
-    res.status(200).json({ message: "Login successful", user: { id: userDoc.id, fullName: user.fullName } });
-  } catch (err) {
-    console.error("Login Error:", err);
-    res.status(500).json({ error: "Login failed" });
-  }
-});
-
-// ✏️ Update User by ID
-router.put("/:id", async (req, res) => {
-  const { id } = req.params;
-  const { fullName, email, phone, password } = req.body;
-
-  try {
-    const userDocRef = userRef.doc(id);
-    const userDoc = await userDocRef.get();
-
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const updateData = {};
-    if (fullName) updateData.fullName = fullName;
-    if (email) updateData.email = email;
-    if (phone) updateData.phone = phone;
-    if (password) {
-      const hashed = await bcrypt.hash(password, 10);
-      updateData.password = hashed;
-    }
-
-    await userDocRef.update(updateData);
-    const updated = await userDocRef.get();
-
-    res.status(200).json({
-      message: "User updated",
-      user: {
-        id: updated.id,
-        fullName: updated.data().fullName,
-        email: updated.data().email,
-        phone: updated.data().phone,
-      },
-    });
-  } catch (err) {
-    console.error("Update Error:", err);
-    res.status(500).json({ error: "Failed to update user" });
-  }
-});
-
-// 📦 Save address
+//  ADD ADDRESS for logged-in user
 router.post("/addresses", async (req, res) => {
   const {
     userId,
@@ -187,8 +123,12 @@ router.post("/addresses", async (req, res) => {
   if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
   try {
-    await db.collection("addresses").add({
-      userId,
+    const userDoc = await userRef.doc(userId.toString()).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const addressData = {
       name,
       mobile,
       pincode,
@@ -200,30 +140,94 @@ router.post("/addresses", async (req, res) => {
       landmark,
       addressType,
       createdAt: new Date().toISOString(),
-    });
+    };
+
+    await userRef
+      .doc(userId.toString())
+      .collection("addresses")
+      .add(addressData);
 
     res.status(200).json({ message: "Address saved" });
   } catch (err) {
-    console.error("Address Error:", err);
-    res.status(500).json({ message: "Database error" });
+    console.error("Add Address Error:", err);
+    res.status(500).json({ message: "Failed to save address" });
   }
 });
 
-// 📥 Get addresses by userId
+//  GET ALL ADDRESSES for a user
 router.get("/loginaddress", async (req, res) => {
   const { userId } = req.query;
 
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
   try {
-    const snapshot = await db
+    const snapshot = await userRef
+      .doc(userId.toString())
       .collection("addresses")
-      .where("userId", "==", userId)
       .get();
 
-    const addresses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const addresses = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
     res.status(200).json(addresses);
   } catch (err) {
-    console.error("Address Fetch Error:", err);
-    res.status(500).json({ error: "Failed to fetch addresses" });
+    console.error("Fetch Address Error:", err);
+    res.status(500).json({ message: "Failed to fetch addresses" });
+  }
+});
+
+//  UPDATE USER
+router.put("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { fullName, email, phone, password } = req.body;
+
+  try {
+    const userDocRef = userRef.doc(id.toString());
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const updates = {
+      ...(fullName && { fullName }),
+      ...(email && { email }),
+      ...(phone && { phone }),
+    };
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updates.password = hashedPassword;
+    }
+
+    await userDocRef.update(updates);
+
+    res.status(200).json({ message: "User updated", updates });
+  } catch (err) {
+    console.error("Update Error:", err);
+    res.status(500).json({ error: "Failed to update user" });
+  }
+});
+
+// DELETE USER
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const userDocRef = userRef.doc(id.toString());
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await userDocRef.delete();
+    res.status(200).json({ message: "User deleted" });
+  } catch (err) {
+    console.error("Delete Error:", err);
+    res.status(500).json({ error: "Failed to delete user" });
   }
 });
 
