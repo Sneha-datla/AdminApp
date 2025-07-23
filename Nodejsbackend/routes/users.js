@@ -75,89 +75,101 @@ router.get("/all", async (req, res) => {
 
 
 // Delete User by ID
-router.delete('/:id', async (req, res) => {
+router.delete("/:id", async (req, res) => {
   const { id } = req.params;
-
   try {
-    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING *', [id]);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'User not found' });
+    const userDoc = await userRef.doc(id).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ message: 'User deleted', user: result.rows[0] });
+    await userRef.doc(id).delete();
+    res.status(200).json({ message: "User deleted" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to delete user' });
+    console.error("Delete Error:", err);
+    res.status(500).json({ error: "Failed to delete user" });
   }
 });
-// login.js
-router.post('/login', async (req, res) => {
-  const { identifier, password } = req.body; // identifier can be email or phone
+
+// 🔐 Login by email or phone
+router.post("/login", async (req, res) => {
+  const { identifier, password } = req.body;
 
   try {
-    const userResult = await pool.query(
-      'SELECT * FROM users WHERE email = $1 OR phone = $1',
-      [identifier]
-    );
+    const snapshot = await userRef
+      .where("email", "==", identifier)
+      .get();
 
-    const user = userResult.rows[0];
-    if (!user) return res.status(401).json({ error: 'Invalid email/phone or password' });
+    let userDoc = null;
 
+    if (snapshot.empty) {
+      const phoneSnap = await userRef.where("phone", "==", identifier).get();
+      if (!phoneSnap.empty) {
+        userDoc = phoneSnap.docs[0];
+      }
+    } else {
+      userDoc = snapshot.docs[0];
+    }
+
+    if (!userDoc) {
+      return res.status(401).json({ error: "Invalid email/phone or password" });
+    }
+
+    const user = userDoc.data();
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ error: 'Invalid email/phone or password' });
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid email/phone or password" });
+    }
 
-    res.status(200).json({ message: 'Login successful', user: { id: user.id, fullName: user.full_name } });
+    res.status(200).json({ message: "Login successful", user: { id: userDoc.id, fullName: user.fullName } });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Login failed' });
+    console.error("Login Error:", err);
+    res.status(500).json({ error: "Login failed" });
   }
 });
 
-// Update user route
-router.put('/:id', async (req, res) => {
+// ✏️ Update User by ID
+router.put("/:id", async (req, res) => {
   const { id } = req.params;
   const { fullName, email, phone, password } = req.body;
 
   try {
-    // Check if password is provided and hash it if so
-    let hashedPassword = null;
+    const userDocRef = userRef.doc(id);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const updateData = {};
+    if (fullName) updateData.fullName = fullName;
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
     if (password) {
-      hashedPassword = await bcrypt.hash(password, 10);
+      const hashed = await bcrypt.hash(password, 10);
+      updateData.password = hashed;
     }
 
-    // Update user fields conditionally
-    const updateQuery = `
-      UPDATE users
-      SET full_name = COALESCE($1, full_name),
-          email = COALESCE($2, email),
-          phone = COALESCE($3, phone),
-          password = COALESCE($4, password)
-      WHERE id = $5
-      RETURNING id, full_name, email, phone
-    `;
+    await userDocRef.update(updateData);
+    const updated = await userDocRef.get();
 
-    const values = [
-      fullName || null,
-      email || null,
-      phone || null,
-      hashedPassword || null,
-      id
-    ];
-
-    const result = await pool.query(updateQuery, values);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.status(200).json({ message: 'User updated', user: result.rows[0] });
+    res.status(200).json({
+      message: "User updated",
+      user: {
+        id: updated.id,
+        fullName: updated.data().fullName,
+        email: updated.data().email,
+        phone: updated.data().phone,
+      },
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update user' });
+    console.error("Update Error:", err);
+    res.status(500).json({ error: "Failed to update user" });
   }
 });
-router.post('/addresses', async (req, res) => {
+
+// 📦 Save address
+router.post("/addresses", async (req, res) => {
   const {
     userId,
     name,
@@ -172,28 +184,47 @@ router.post('/addresses', async (req, res) => {
     addressType,
   } = req.body;
 
-  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+  if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
   try {
-    await pool.query(
-      `INSERT INTO addresses
-        (user_id, name, mobile, pincode, flat, street, cod, city, state, landmark, address_type)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-      [userId, name, mobile, pincode, flat, street, cod, city, state, landmark, addressType]
-    );
+    await db.collection("addresses").add({
+      userId,
+      name,
+      mobile,
+      pincode,
+      flat,
+      street,
+      cod,
+      city,
+      state,
+      landmark,
+      addressType,
+      createdAt: new Date().toISOString(),
+    });
 
-    res.status(200).json({ message: 'Address saved' });
+    res.status(200).json({ message: "Address saved" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Database error' });
+    console.error("Address Error:", err);
+    res.status(500).json({ message: "Database error" });
   }
 });
-router.get('/loginaddress', async (req, res) => {
-  const userId = req.query.userId;
-  const result = await pool.query('SELECT * FROM addresses WHERE user_id = $1', [userId]);
-  res.json(result.rows);
+
+// 📥 Get addresses by userId
+router.get("/loginaddress", async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+    const snapshot = await db
+      .collection("addresses")
+      .where("userId", "==", userId)
+      .get();
+
+    const addresses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.status(200).json(addresses);
+  } catch (err) {
+    console.error("Address Fetch Error:", err);
+    res.status(500).json({ error: "Failed to fetch addresses" });
+  }
 });
-
-
 
 module.exports = router;
