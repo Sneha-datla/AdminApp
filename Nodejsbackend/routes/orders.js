@@ -2,16 +2,17 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
-const pool = require("../db");
+const { db } = require("../firebase"); // Ensure your firebase.js exports { db }
+
 const router = express.Router();
 
-// Create uploads folder if not exists
+// ✅ Ensure uploads folder exists
 const uploadDir = "uploads/";
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-// Multer setup
+// ✅ Multer storage config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -21,40 +22,52 @@ const storage = multer.diskStorage({
     cb(null, uniqueName);
   },
 });
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
-// POST /orders with file upload
+// ✅ POST /orders/add (Firestore + Multer)
 router.post("/add", upload.array("image", 5), async (req, res) => {
   try {
     const { title, description, purity, price, status } = req.body;
 
-    // Get file paths from uploaded images
-    const imagePaths = req.files.map((file) => file.path);
+    // 🖼️ Get uploaded image paths (relative)
+    const imagePaths = req.files.map((file) => `/${file.path.replace(/\\/g, '/')}`);
 
-    const result = await pool.query(
-      `INSERT INTO orders (image, title, description, purity, price, status)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [imagePaths, title, description, purity, price, status]
-    );
+    // 🗃️ Create new order object
+    const newOrder = {
+      title,
+      description,
+      purity,
+      price: parseFloat(price),
+      status,
+      image: imagePaths,
+      createdAt: new Date().toISOString(),
+    };
 
-    res.status(201).json(result.rows[0]);
+    // 💾 Store to Firestore
+    const docRef = await db.collection("orders").add(newOrder);
+
+    res.status(201).json({ message: "Order added", id: docRef.id, order: newOrder });
   } catch (err) {
-    console.error(err.message);
+    console.error("Order creation error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
+// ✅ GET /orders/all (Fetch all orders from Firestore)
+router.get("/all", async (req, res) => {
+  try {
+    const snapshot = await db.collection("orders").orderBy("createdAt", "desc").get();
 
+    const orders = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
-
-router.get("/all", async(req,res) =>{
-try{
-    const result = await pool.query(`SELECT * FROM orders ORDER BY created_at DESC`);
-    res.status(200).json(result.rows);
-
-}catch{
+    res.status(200).json(orders);
+  } catch (err) {
+    console.error("Fetching orders failed:", err);
     res.status(500).json({ error: "Server error" });
-
-}
+  }
 });
+
 module.exports = router;
