@@ -168,7 +168,8 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// 📦 Save address
+//  Save address
+//  Save address - Only for registered users
 router.post("/addresses", async (req, res) => {
   const {
     userId,
@@ -184,9 +185,20 @@ router.post("/addresses", async (req, res) => {
     addressType,
   } = req.body;
 
-  if (!userId) return res.status(401).json({ message: "Unauthorized" });
+  //  Reject if no userId provided
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized: Missing userId" });
+  }
 
   try {
+    //  Check if userId exists in Firestore
+    const userDoc = await userRef.doc(userId).get();
+
+    if (!userDoc.exists) {
+      return res.status(403).json({ message: "Access denied: Invalid userId" });
+    }
+
+    //  Proceed to save address
     await db.collection("addresses").add({
       userId,
       name,
@@ -202,14 +214,14 @@ router.post("/addresses", async (req, res) => {
       createdAt: new Date().toISOString(),
     });
 
-    res.status(200).json({ message: "Address saved" });
+    res.status(200).json({ message: "Address saved successfully" });
   } catch (err) {
     console.error("Address Error:", err);
-    res.status(500).json({ message: "Database error" });
+    res.status(500).json({ message: "Database error while saving address" });
   }
 });
 
-// 📥 Get addresses by userId
+//  Get addresses by userId
 router.get("/loginaddress", async (req, res) => {
   const { userId } = req.query;
 
