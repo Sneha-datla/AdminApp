@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
-const pool = require("../db");
+const { db } = require("../firebase"); // Make sure firebase.js exports { db }
 
 const router = express.Router();
 
@@ -10,18 +10,17 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
+// 🔧 Multer Setup
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
-
 const upload = multer({ storage });
 
-// Add seller gold with multiple images
+/**
+ * 🔹 POST /sellergold/add
+ * Adds seller gold with multiple images
+ */
 router.post("/add", upload.array("images", 10), async (req, res) => {
   const {
     name,
@@ -38,66 +37,84 @@ router.post("/add", upload.array("images", 10), async (req, res) => {
   try {
     const imagePaths = files.map(file => `/uploads/${file.filename}`);
 
-    const result = await pool.query(
-      `INSERT INTO sellergold (name, category, weight, purity, condition, price, description, images)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [name, category, weight, purity, condition, price, description, imagePaths]
-    );
+    const newDoc = {
+      name,
+      category,
+      weight,
+      purity,
+      condition,
+      price: parseFloat(price),
+      description,
+      images: imagePaths,
+      createdAt: new Date().toISOString(),
+    };
+
+    const docRef = await db.collection("sellergold").add(newDoc);
 
     res.status(201).json({
       message: "Seller gold product added successfully",
-      data: result.rows[0]
+      id: docRef.id,
+      data: newDoc
     });
   } catch (err) {
-    console.error("Error inserting seller gold product:", err.message);
+    console.error("Error adding seller gold:", err.message);
     res.status(500).json({ error: "Failed to add seller gold product" });
   }
 });
+
+/**
+ * 🔹 GET /sellergold/all
+ * Fetch all seller gold products
+ */
 router.get("/all", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM sellergold ORDER BY id DESC");
-    res.status(200).json(result.rows);
+    const snapshot = await db.collection("sellergold").orderBy("createdAt", "desc").get();
+
+    const results = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    res.status(200).json(results);
   } catch (err) {
-    console.error("Error fetching seller gold products:", err.message);
+    console.error("Error fetching seller gold:", err.message);
     res.status(500).json({ error: "Failed to fetch seller gold products" });
   }
 });
+
+/**
+ * 🔹 DELETE /sellergold/:id
+ * Deletes a product and its images from disk
+ */
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    // First, get the images associated with the product
-    const Result = await pool.query(
-      "SELECT images FROM sellergold WHERE id = $1",
-      [id]
-    );
+    const docRef = db.collection("sellergold").doc(id);
+    const doc = await docRef.get();
 
-    if (Result.rows.length === 0) {
+    if (!doc.exists) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    const imagePaths = Result.rows[0].images || [];
+    const { images = [] } = doc.data();
 
-    // Delete images from the filesystem
-    imagePaths.forEach((imagePath) => {
-      const filePath = imagePath.replace("/uploads/", "uploads/");
+    // Delete images from filesystem
+    images.forEach((imgPath) => {
+      const filePath = imgPath.replace("/uploads/", "uploads/");
       fs.unlink(filePath, (err) => {
-        if (err) {
-          console.warn(`Failed to delete file: ${filePath}`, err.message);
-        }
+        if (err) console.warn("Image delete failed:", filePath, err.message);
       });
     });
 
-    // Delete the product from the database
-    await pool.query("DELETE FROM sellergold WHERE id = $1", [id]);
+    // Delete Firestore document
+    await docRef.delete();
 
     res.status(200).json({ message: "Seller gold product deleted successfully" });
   } catch (err) {
-    console.error("Error deleting seller gold product:", err.message);
+    console.error("Error deleting seller gold:", err.message);
     res.status(500).json({ error: "Failed to delete seller gold product" });
   }
 });
-
 
 module.exports = router;
