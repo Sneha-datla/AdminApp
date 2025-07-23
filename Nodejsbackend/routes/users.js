@@ -4,17 +4,29 @@ const bcrypt = require("bcryptjs");
 const { db } = require("../firebase"); // adjust the path if needed
 
 // 🔐 Signup - Add new user to Firestore
+const counterRef = db.collection("counters").doc("users");
+
+const userRef = db.collection("users");
+
 router.post("/signup", async (req, res) => {
   const { fullName, email, phone, password } = req.body;
 
   try {
     // Check if user already exists
-    const snapshot = await db.collection("users").where("email", "==", email).get();
+    const snapshot = await userRef.where("email", "==", email).get();
     if (!snapshot.empty) {
       return res.status(400).json({ error: "User with this email already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Get the current counter value
+    const counterDoc = await counterRef.get();
+    let currentId = 1;
+
+    if (counterDoc.exists) {
+      currentId = counterDoc.data().value + 1;
+    }
 
     const newUser = {
       fullName,
@@ -22,16 +34,22 @@ router.post("/signup", async (req, res) => {
       phone,
       password: hashedPassword,
       createdAt: new Date().toISOString(),
+      userId: currentId,
     };
 
-    const docRef = await db.collection("users").add(newUser);
+    // Add user with ID = currentId
+    await userRef.doc(currentId.toString()).set(newUser);
 
-    res.status(201).json({ message: "User created", id: docRef.id });
+    // Update the counter
+    await counterRef.set({ value: currentId });
+
+    res.status(201).json({ message: "User created", id: currentId });
   } catch (err) {
     console.error("Signup Error:", err);
     res.status(500).json({ error: "Failed to create user" });
   }
 });
+
 
 // 👥 Get all users (excluding password)
 router.get("/all", async (req, res) => {
