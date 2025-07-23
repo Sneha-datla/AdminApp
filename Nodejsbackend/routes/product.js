@@ -1,99 +1,107 @@
 // routes/product.js
 const express = require("express");
 const multer = require("multer");
-const pool = require("../db");
-const router = express.Router();
 const fs = require("fs");
+const path = require("path");
+const { db } = require("../firebase"); // make sure this points to your Firestore setup
 
-// Example route
+const router = express.Router();
+
+// 🧪 Test route
 router.get("/", (req, res) => {
   res.send("Product route working");
 });
 
+// ✅ Create uploads directory if not exists
 const uploadDir = "uploads/";
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
+// ✅ Setup multer storage config
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname);
+    cb(null, Date.now() + "-" + file.originalname);
   },
 });
-
 const upload = multer({ storage });
 
-// ⬇️ Use `.array()` for multiple files
+// ✅ Add a product with image upload
 router.post("/add", upload.array("image_urls", 10), async (req, res) => {
   const { productId, title, purity, price, stock, featured } = req.body;
   const files = req.files || [];
 
   try {
-    const imagePaths = files.map(file => `/uploads/${file.filename}`);
+    const imagePaths = files.map((file) => `/uploads/${file.filename}`);
 
-    const result = await pool.query(
-      `INSERT INTO products (product_id, title, purity, price, stock, featured, image_urls) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [productId, title, purity, price, stock, featured, imagePaths] // ✅ pass JS array directly
-    );
+    const productData = {
+      productId,
+      title,
+      purity,
+      price: parseFloat(price),
+      stock: parseInt(stock),
+      featured: featured === "true",
+      image_urls: imagePaths,
+      createdAt: new Date().toISOString(),
+    };
 
-    res.status(201).json(result.rows[0]);
+    const docRef = await db.collection("products").add(productData);
+
+    res.status(201).json({
+      message: "Product added",
+      id: docRef.id,
+      product: productData,
+    });
   } catch (err) {
-    console.error(err.message);
+    console.error("Error adding product:", err.message);
     res.status(500).json({ error: "Product creation failed" });
   }
 });
 
+// ✅ Get all products
 router.get("/all", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM products");
-    res.status(200).json(result.rows);
+    const snapshot = await db.collection("products").get();
+    const products = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.status(200).json(products);
   } catch (err) {
     console.error("Error fetching products:", err.message);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 });
-// DELETE a product by ID
 
+// ✅ Delete product by Firestore document ID
 router.delete("/:id", async (req, res) => {
   const id = req.params.id;
 
   try {
-    console.log("Attempting to delete product with ID:", id);
+    const docRef = db.collection("products").doc(id);
+    const doc = await docRef.get();
 
-    const result = await pool.query(
-      "SELECT image_urls FROM products WHERE id = $1",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
+    if (!doc.exists) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    let imageUrls = result.rows[0].image_urls;
+    const product = doc.data();
+    const imageUrls = product.image_urls || [];
 
-    // Parse image URLs safely
-    if (typeof imageUrls === "string") {
-      try {
-        imageUrls = JSON.parse(imageUrls);
-      } catch {
-        imageUrls = imageUrls.split(",").map(url => url.trim());
-      }
-    }
-
-    // Delete each image from filesystem
+    // Delete image files from local filesystem
     imageUrls.forEach((url) => {
-      const filePath = `.${url}`; // Assuming /uploads/...
+      const filePath = path.join(".", url); // e.g., './uploads/filename.jpg'
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
     });
 
-    // Delete product from database
-    await pool.query("DELETE FROM products WHERE id = $1", [id]);
+    // Delete product document
+    await docRef.delete();
 
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (err) {
@@ -101,8 +109,5 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to delete product" });
   }
 });
-
-
-
 
 module.exports = router;
