@@ -230,5 +230,51 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to delete user" });
   }
 });
+router.post("/orders", async (req, res) => {
+  const {
+    userId,
+    phone,
+    address,
+    orderSummary,
+    subtotal,
+    shipping,
+    totalAmount,
+    paymentMethod,
+    expectedDelivery,
+  } = req.body;
+
+  try {
+    // Step 1: Check if user exists in "users" collection
+    const userRef = db.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+      return res.status(401).json({ error: "Unauthorized: Invalid or unregistered user ID." });
+    }
+
+    // Step 2: Proceed with order creation
+    const newOrder = {
+      userId,
+      phone,
+      address,
+      orderSummary,
+      subtotal,
+      shipping,
+      totalAmount,
+      paymentMethod,
+      orderDate: new Date().toISOString(),
+      expectedDelivery,
+      status: "Pending",
+    };
+
+    const docRef = await db.collection("orders").add(newOrder);
+    res.status(201).json({ message: "Order created", orderId: docRef.id });
+
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 module.exports = router;
