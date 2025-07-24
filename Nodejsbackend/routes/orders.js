@@ -70,7 +70,7 @@ router.get("/all", async (req, res) => {
   }
 });
 
-app.post('/addcart', async (req, res) => {
+router.post('/addcart', async (req, res) => {
   const { userId, productId, product } = req.body;
 
   if (!userId || !productId || !product) {
