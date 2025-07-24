@@ -78,18 +78,22 @@ router.post('/addcart', async (req, res) => {
   }
 
   try {
-    const cartRef = db.collection('carts').doc(userId).collection('items').doc(productId);
+    const docId = `${userId}_${productId}`;
+    const cartRef = db.collection('carts').doc(docId);
 
     const existingItem = await cartRef.get();
 
     if (existingItem.exists) {
-      // If product exists, just increment quantity
+      // If product exists, increment quantity
       await cartRef.update({
         quantity: admin.firestore.FieldValue.increment(product.quantity),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     } else {
-      // Save full product info including weight and purity
+      // Save full product info directly in carts
       await cartRef.set({
+        userId,
+        productId,
         image: product.image,
         name: product.name,
         price: product.price,
@@ -106,6 +110,8 @@ router.post('/addcart', async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+
 router.post("/checkout", async (req, res) => {
   const {
     userId,
