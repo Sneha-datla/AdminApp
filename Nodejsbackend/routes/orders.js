@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
-const { db } = require("../firebase"); // Ensure your firebase.js exports { db }
+const { admin, db } = require("../firebase");
 
 const router = express.Router();
 
