@@ -114,22 +114,28 @@ router.post("/checkout", async (req, res) => {
     shipping,
     totalAmount,
     paymentMethod,
-    expectedDelivery
+    expectedDelivery,
   } = req.body;
 
   try {
-    // 1. Fetch and validate address
-    const addressDoc = await db.collection("addresses").doc(addressId).get();
+    // ✅ 1. Fetch and validate address from nested collection
+    const addressDoc = await db
+      .collection("users")
+      .doc(userId.toString())
+      .collection("addresses")
+      .doc(addressId)
+      .get();
+
     if (!addressDoc.exists) {
       return res.status(400).json({ error: "Address not found" });
     }
 
     const addressData = addressDoc.data();
-    if (addressData.userId !== userId) {
-      return res.status(403).json({ error: "Unauthorized address access" });
-    }
 
-    // 2. Fetch cart items
+    // Optional: If your address structure ensures only the user can access their own addresses,
+    // you may skip this next userId check since it's nested under their user doc
+
+    // ✅ 2. Fetch cart items from 'cart' collection
     const cartSnapshot = await db.collection("cart")
       .where("userId", "==", userId)
       .get();
@@ -138,9 +144,9 @@ router.post("/checkout", async (req, res) => {
       return res.status(400).json({ error: "Cart is empty" });
     }
 
-    // 3. Build detailed orderSummary
+    // ✅ 3. Build detailed order summary
     const orderSummary = await Promise.all(
-      cartSnapshot.docs.map(async doc => {
+      cartSnapshot.docs.map(async (doc) => {
         const { productId, quantity } = doc.data();
         const productDoc = await db.collection("products").doc(productId).get();
         const product = productDoc.exists ? productDoc.data() : {};
@@ -150,12 +156,12 @@ router.post("/checkout", async (req, res) => {
           name: product?.name || "Unknown Product",
           price: product?.price || 0,
           quantity,
-          image: product?.image || null
+          image: product?.image || null,
         };
       })
     );
 
-    // 4. Create order
+    // ✅ 4. Create the order
     await db.collection("orders").add({
       userId,
       addressId,
@@ -167,12 +173,12 @@ router.post("/checkout", async (req, res) => {
       paymentMethod,
       expectedDelivery,
       orderDate: new Date().toISOString(),
-      status: "Pending"
+      status: "Pending",
     });
 
-    // 5. Clear cart
+    // ✅ 5. Clear cart after order
     const batch = db.batch();
-    cartSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+    cartSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
 
     res.status(200).json({ message: "Order placed successfully" });
@@ -182,6 +188,7 @@ router.post("/checkout", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 
 module.exports = router;
