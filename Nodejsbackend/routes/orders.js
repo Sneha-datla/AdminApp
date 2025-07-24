@@ -136,7 +136,7 @@ router.post("/checkout", async (req, res) => {
     // you may skip this next userId check since it's nested under their user doc
 
     // ✅ 2. Fetch cart items from 'cart' collection
-    const cartSnapshot = await db.collection("cart")
+    const cartSnapshot = await db.collection("carts")
       .where("userId", "==", userId)
       .get();
 
