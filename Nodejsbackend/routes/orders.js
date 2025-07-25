@@ -179,7 +179,6 @@ router.post("/checkout", async (req, res) => {
       paymentMethod,
       expectedDelivery,
       orderDate: new Date().toISOString(),
-      status: "Pending",
     });
 
     // ✅ 5. Clear cart after order
