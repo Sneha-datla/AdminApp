@@ -45,11 +45,11 @@ router.get('/list/:userId', async (req, res) => {
         }
 
         formattedOrderSummary.push({
-          title: item.title,
+          title: item.name,
           description: item.description,
           purity: purity,
           price: parseFloat(item.price),
-          status: item.status,
+          quantity: item.quantity,
           image: item.imagePaths || item.image,
         });
       }
