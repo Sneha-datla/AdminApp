@@ -159,10 +159,10 @@ router.post("/checkout", async (req, res) => {
 
         return {
           productId,
-          name: product?.name || "Unknown Product",
+          name: product?.title || "Unknown Product",
           price: product?.price || 0,
           quantity,
-          image: product?.image || null,
+          image: product?.image_urls || null,
         };
       })
     );
