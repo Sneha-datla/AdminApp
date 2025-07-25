@@ -57,6 +57,7 @@ router.get('/list/:userId', async (req, res) => {
       orders.push({
         orderId: doc.id,
         createdAt: data.createdAt || new Date().toISOString(),
+        address: data.address || null, // Include address
         orderSummary: formattedOrderSummary,
       });
     }
