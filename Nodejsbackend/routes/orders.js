@@ -10,14 +10,15 @@ const router = express.Router();
 
 // ✅ POST /orders/add (Firestore + Multer)
 // GET /orders/:userId
+// GET /orders/:userId
 router.get('/list/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
+    // Removed .orderBy('createdAt', 'desc') to avoid index requirement
     const ordersSnapshot = await db
       .collection('orders')
       .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
       .get();
 
     const orders = [];
@@ -32,6 +33,7 @@ router.get('/list/:userId', async (req, res) => {
         const productId = item.productId;
         let purity = null;
 
+        // Fetch product details to get purity
         if (productId) {
           const productRef = db.collection('products').doc(productId);
           const productDoc = await productRef.get();
@@ -47,6 +49,7 @@ router.get('/list/:userId', async (req, res) => {
           description: item.description,
           purity: purity,
           price: parseFloat(item.price),
+          status: item.status,
           image: item.imagePaths || item.image,
         });
       }
@@ -64,6 +67,7 @@ router.get('/list/:userId', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
+
 
 
 // ✅ GET /orders/all (Fetch all orders from Firestore)
