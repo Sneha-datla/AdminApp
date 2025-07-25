@@ -128,6 +128,32 @@ router.post('/addcart', async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
+// ✅ GET /cart/:userId - Get cart items by userId
+router.get('/cartlist/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const cartSnapshot = await db
+      .collection('carts')
+      .where('userId', '==', userId)
+      .get();
+
+    if (cartSnapshot.empty) {
+      return res.status(200).json({ cart: [] }); // Return empty cart if no items
+    }
+
+    const cartItems = cartSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.status(200).json({ cart: cartItems });
+  } catch (error) {
+    console.error('Error fetching cart items:', error);
+    res.status(500).json({ error: 'Failed to fetch cart items' });
+  }
+});
+
 
 
 router.post("/checkout", async (req, res) => {
