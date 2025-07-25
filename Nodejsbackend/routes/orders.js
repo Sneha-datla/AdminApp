@@ -1,5 +1,4 @@
 const express = require("express");
-const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const { admin, db } = require("../firebase");
@@ -7,51 +6,65 @@ const { admin, db } = require("../firebase");
 const router = express.Router();
 
 // ✅ Ensure uploads folder exists
-const uploadDir = "uploads/";
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
 
-// ✅ Multer storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + "-" + file.originalname;
-    cb(null, uniqueName);
-  },
-});
-const upload = multer({ storage });
 
 // ✅ POST /orders/add (Firestore + Multer)
-router.post("/add", upload.array("image", 5), async (req, res) => {
+// GET /orders/:userId
+router.get('/list/:userId', async (req, res) => {
+  const { userId } = req.params;
+
   try {
-    const { title, description, purity, price, status } = req.body;
+    const ordersSnapshot = await db
+      .collection('orders')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .get();
 
-    // 🖼️ Get uploaded image paths (relative)
-    const imagePaths = req.files.map((file) => `/${file.path.replace(/\\/g, '/')}`);
+    const orders = [];
 
-    // 🗃️ Create new order object
-    const newOrder = {
-      title,
-      description,
-      purity,
-      price: parseFloat(price),
-      status,
-      image: imagePaths,
-      createdAt: new Date().toISOString(),
-    };
+    for (const doc of ordersSnapshot.docs) {
+      const data = doc.data();
+      const orderSummary = data.orderSummary || [];
 
-    // 💾 Store to Firestore
-    const docRef = await db.collection("orders").add(newOrder);
+      const formattedOrderSummary = [];
 
-    res.status(201).json({ message: "Order added", id: docRef.id, order: newOrder });
-  } catch (err) {
-    console.error("Order creation error:", err);
-    res.status(500).json({ error: "Server error" });
+      for (const item of orderSummary) {
+        const productId = item.productId;
+        let purity = null;
+
+        if (productId) {
+          const productRef = db.collection('products').doc(productId);
+          const productDoc = await productRef.get();
+
+          if (productDoc.exists) {
+            const productData = productDoc.data();
+            purity = productData.purity || null;
+          }
+        }
+
+        formattedOrderSummary.push({
+          title: item.title,
+          description: item.description,
+          purity: purity,
+          price: parseFloat(item.price),
+          image: item.imagePaths || item.image,
+        });
+      }
+
+      orders.push({
+        orderId: doc.id,
+        createdAt: data.createdAt || new Date().toISOString(),
+        orderSummary: formattedOrderSummary,
+      });
+    }
+
+    return res.status(200).json({ orders });
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
+
 
 // ✅ GET /orders/all (Fetch all orders from Firestore)
 router.get("/all", async (req, res) => {
