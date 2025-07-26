@@ -184,6 +184,7 @@ router.post("/checkout", async (req, res) => {
        name,
         price,
         quantity,
+        purity,
         image
       } = doc.data();
 
@@ -191,7 +192,8 @@ router.post("/checkout", async (req, res) => {
         name: name || "Unknown Product",
         price: price || 0,
         quantity,
-        image: image || null
+       purity: purity || null,
+      image: image || null
       };
     });
 
