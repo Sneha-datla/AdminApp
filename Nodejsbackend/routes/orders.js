@@ -30,7 +30,6 @@ router.get('/list/:userId', async (req, res) => {
         title: item.name,
         description: item.description || '',
         purity: item.purity || null,
-        price: parseFloat(item.price),
         quantity: item.quantity,
         image: item.imagePaths || item.image,
       }));
@@ -40,7 +39,8 @@ router.get('/list/:userId', async (req, res) => {
         createdAt: data.orderDate || new Date().toISOString(),
         status: data.status || 'unknown', // ✅ Get status directly
         address: data.address || null,
-        orderSummary: formattedOrderSummary,
+       price: parseFloat(data.price || data.totalAmount || 0), // ✅ Use top-level price
+       orderSummary: formattedOrderSummary,
       });
     }
 
