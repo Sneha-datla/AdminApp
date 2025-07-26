@@ -128,9 +128,6 @@ router.post("/checkout", async (req, res) => {
   const {
     userId,
     addressId,
-    subtotal,
-    shipping,
-    totalAmount,
     paymentMethod,
     expectedDelivery,
   } = req.body;
@@ -150,7 +147,7 @@ router.post("/checkout", async (req, res) => {
 
     const addressData = addressDoc.data();
 
-    // ✅ 2. Fetch cart items from 'carts' collection
+    // ✅ 2. Fetch cart items
     const cartSnapshot = await db.collection("carts")
       .where("userId", "==", userId)
       .get();
@@ -159,26 +156,34 @@ router.post("/checkout", async (req, res) => {
       return res.status(400).json({ error: "Cart is empty" });
     }
 
-    // ✅ 3. Build order summary directly from cart data
+    // ✅ 3. Build order summary and calculate totals
+    let subtotal = 0;
+    const shipping = 0; // Free shipping
+
     const orderSummary = cartSnapshot.docs.map((doc) => {
       const {
-       name,
+        name,
         price,
         quantity,
         purity,
-        image
+        image,
       } = doc.data();
+
+      const itemTotal = (price || 0) * (quantity || 1);
+      subtotal += itemTotal;
 
       return {
         name: name || "Unknown Product",
         price: price || 0,
-        quantity,
-       purity: purity || null,
-      image: image || null
+        quantity: quantity || 1,
+        purity: purity || null,
+        image: image || null,
       };
     });
 
-    // ✅ 4. Create the order with status
+    const totalAmount = subtotal + shipping;
+
+    // ✅ 4. Create order
     await db.collection("orders").add({
       userId,
       addressId,
@@ -190,10 +195,10 @@ router.post("/checkout", async (req, res) => {
       paymentMethod,
       expectedDelivery,
       orderDate: new Date().toISOString(),
-      status: "processing" // ✅ default status
+      status: "processing", // default
     });
 
-    // ✅ 5. Clear cart after order
+    // ✅ 5. Clear cart
     const batch = db.batch();
     cartSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
