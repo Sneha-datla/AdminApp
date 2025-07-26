@@ -89,38 +89,24 @@ router.get("/all", async (req, res) => {
 });
 
 router.post('/addcart', async (req, res) => {
-  const { userId, productId, product } = req.body;
+  const { userId, product } = req.body;
 
-  if (!userId || !productId || !product) {
+  if (!userId || !product || !product.name) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
   try {
-    const docId = `${userId}_${productId}`;
-    const cartRef = db.collection('carts').doc(docId);
-
-    const existingItem = await cartRef.get();
-
-    if (existingItem.exists) {
-      // If product exists, increment quantity
-      await cartRef.update({
-        quantity: admin.firestore.FieldValue.increment(product.quantity),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    } else {
-      // Save full product info directly in carts
-      await cartRef.set({
-        userId,
-        productId,
-        image: product.image,
-        name: product.name,
-        price: product.price,
-        quantity: product.quantity,
-        weight: product.weight,
-        purity: product.purity,
-        addedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    }
+    // Just add a new cart item (no custom ID)
+    await db.collection('carts').add({
+      userId,
+      image: product.image,
+      name: product.name,
+      price: product.price,
+      quantity: product.quantity,
+      weight: product.weight,
+      purity: product.purity,
+      addedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
     return res.status(200).json({ message: 'Product added to cart successfully' });
   } catch (error) {
@@ -128,6 +114,7 @@ router.post('/addcart', async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 // ✅ GET /cart/:userId - Get cart items by userId
 router.get('/cartlist/:userId', async (req, res) => {
   const { userId } = req.params;
@@ -182,10 +169,7 @@ router.post("/checkout", async (req, res) => {
 
     const addressData = addressDoc.data();
 
-    // Optional: If your address structure ensures only the user can access their own addresses,
-    // you may skip this next userId check since it's nested under their user doc
-
-    // ✅ 2. Fetch cart items from 'cart' collection
+    // ✅ 2. Fetch cart items from 'carts' collection
     const cartSnapshot = await db.collection("carts")
       .where("userId", "==", userId)
       .get();
@@ -194,24 +178,26 @@ router.post("/checkout", async (req, res) => {
       return res.status(400).json({ error: "Cart is empty" });
     }
 
-    // ✅ 3. Build detailed order summary
-    const orderSummary = await Promise.all(
-      cartSnapshot.docs.map(async (doc) => {
-        const { productId, quantity } = doc.data();
-        const productDoc = await db.collection("products").doc(productId).get();
-        const product = productDoc.exists ? productDoc.data() : {};
+    // ✅ 3. Build order summary directly from cart data
+    const orderSummary = cartSnapshot.docs.map((doc) => {
+      const {
+        productId,
+        name,
+        price,
+        quantity,
+        image
+      } = doc.data();
 
-        return {
-          productId,
-          name: product?.title || "Unknown Product",
-          price: product?.price || 0,
-          quantity,
-          image: product?.image_urls || null,
-        };
-      })
-    );
+      return {
+        productId,
+        name: name || "Unknown Product",
+        price: price || 0,
+        quantity,
+        image: image || null
+      };
+    });
 
-    // ✅ 4. Create the order
+    // ✅ 4. Create the order with status
     await db.collection("orders").add({
       userId,
       addressId,
@@ -223,6 +209,7 @@ router.post("/checkout", async (req, res) => {
       paymentMethod,
       expectedDelivery,
       orderDate: new Date().toISOString(),
+      status: "processing" // ✅ default status
     });
 
     // ✅ 5. Clear cart after order
