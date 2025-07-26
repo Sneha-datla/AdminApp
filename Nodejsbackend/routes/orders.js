@@ -181,8 +181,7 @@ router.post("/checkout", async (req, res) => {
     // ✅ 3. Build order summary directly from cart data
     const orderSummary = cartSnapshot.docs.map((doc) => {
       const {
-        productId,
-        name,
+       name,
         price,
         quantity,
         image
