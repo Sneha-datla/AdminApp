@@ -188,7 +188,6 @@ router.post("/checkout", async (req, res) => {
       } = doc.data();
 
       return {
-        productId,
         name: name || "Unknown Product",
         price: price || 0,
         quantity,
