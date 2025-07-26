@@ -210,7 +210,7 @@ router.post("/checkout", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-router.post('/order/update-status', async (req, res) => {
+router.post('/update-status', async (req, res) => {
   const { orderId, status } = req.body;
   try {
     const orderRef = db.collection('orders').doc(orderId);
