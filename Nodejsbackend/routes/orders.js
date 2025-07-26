@@ -15,7 +15,6 @@ router.get('/list/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // Removed .orderBy('createdAt', 'desc') to avoid index requirement
     const ordersSnapshot = await db
       .collection('orders')
       .where('userId', '==', userId)
@@ -27,37 +26,20 @@ router.get('/list/:userId', async (req, res) => {
       const data = doc.data();
       const orderSummary = data.orderSummary || [];
 
-      const formattedOrderSummary = [];
-
-      for (const item of orderSummary) {
-        const productId = item.productId;
-        let purity = null;
-
-        // Fetch product details to get purity
-        if (productId) {
-          const productRef = db.collection('products').doc(productId);
-          const productDoc = await productRef.get();
-
-          if (productDoc.exists) {
-            const productData = productDoc.data();
-            purity = productData.purity || null;
-          }
-        }
-
-        formattedOrderSummary.push({
-          title: item.name,
-          description: item.description,
-          purity: purity,
-          price: parseFloat(item.price),
-          quantity: item.quantity,
-          image: item.imagePaths || item.image,
-        });
-      }
+      const formattedOrderSummary = orderSummary.map((item) => ({
+        title: item.name,
+        description: item.description || '',
+        purity: item.purity || null,
+        price: parseFloat(item.price),
+        quantity: item.quantity,
+        image: item.imagePaths || item.image,
+      }));
 
       orders.push({
         orderId: doc.id,
-        createdAt: data.createdAt || new Date().toISOString(),
-        address: data.address || null, // Include address
+        createdAt: data.orderDate || new Date().toISOString(),
+        status: data.status || 'unknown', // ✅ Get status directly
+        address: data.address || null,
         orderSummary: formattedOrderSummary,
       });
     }
@@ -68,7 +50,6 @@ router.get('/list/:userId', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
-
 
 
 // ✅ GET /orders/all (Fetch all orders from Firestore)
