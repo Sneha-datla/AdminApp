@@ -41,7 +41,7 @@ router.get('/list/:userId', async (req, res) => {
         status: data.status || 'unknown',
         address: data.address || null,
         price: parseFloat(data.totalAmount || 0),
-        products: formattedProducts // <-- full array of items
+        ordersummary: formattedProducts // <-- full array of items
       });
     }
 
