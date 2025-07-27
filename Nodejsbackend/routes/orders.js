@@ -26,21 +26,22 @@ router.get('/list/:userId', async (req, res) => {
       const data = doc.data();
       const orderSummary = data.orderSummary || [];
 
-      const formattedOrderSummary = orderSummary.map((item) => ({
-        title: item.name,
-        description: item.description || '',
+      // ✅ Map each product in the orderSummary array
+      const formattedProducts = orderSummary.map((item) => ({
+        title: item.name || "Unknown Product",
+        quantity: item.quantity || 1,
         purity: item.purity || null,
-        quantity: item.quantity,
-        image: item.imagePaths || item.image,
+        image: item.imagePaths || item.image || null
       }));
 
+      // ✅ Push full order details with all products
       orders.push({
         orderId: doc.id,
         createdAt: data.orderDate || new Date().toISOString(),
-        status: data.status || 'unknown', // ✅ Get status directly
+        status: data.status || 'unknown',
         address: data.address || null,
-       price: parseFloat(data.price || data.totalAmount || 0), // ✅ Use top-level price
-       orderSummary: formattedOrderSummary,
+        price: parseFloat(data.totalAmount || 0),
+        products: formattedProducts // <-- full array of items
       });
     }
 
@@ -50,6 +51,7 @@ router.get('/list/:userId', async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
+
 
 
 // ✅ GET /orders/all (Fetch all orders from Firestore)
@@ -128,12 +130,13 @@ router.post("/checkout", async (req, res) => {
   const {
     userId,
     addressId,
+    cartId, // ✅ cartId from request body
     paymentMethod,
     expectedDelivery,
   } = req.body;
 
   try {
-    // ✅ 1. Fetch and validate address from nested collection
+    // ✅ 1. Fetch and validate address
     const addressDoc = await db
       .collection("users")
       .doc(userId.toString())
@@ -147,41 +150,40 @@ router.post("/checkout", async (req, res) => {
 
     const addressData = addressDoc.data();
 
-    // ✅ 2. Fetch cart items
-    const cartSnapshot = await db.collection("carts")
-      .where("userId", "==", userId)
-      .get();
+    // ✅ 2. Fetch cart item and validate user ownership
+    const cartDoc = await db.collection("carts").doc(cartId).get();
 
-    if (cartSnapshot.empty) {
-      return res.status(400).json({ error: "Cart is empty" });
+    if (!cartDoc.exists) {
+      return res.status(400).json({ error: "Cart not found" });
     }
 
-    // ✅ 3. Build order summary and calculate totals
-    let subtotal = 0;
-    const shipping = 0; // Free shipping
+    const cartItem = cartDoc.data();
 
-    const orderSummary = cartSnapshot.docs.map((doc) => {
-      const {
-        name,
-        price,
-        quantity,
-        purity,
-        image,
-      } = doc.data();
+    if (cartItem.userId !== userId) {
+      return res.status(403).json({ error: "Unauthorized access to cart" });
+    }
 
-      const itemTotal = (price || 0) * (quantity || 1);
-      subtotal += itemTotal;
+    // ✅ 3. Build order summary
+    const {
+      name,
+      price,
+      quantity,
+      purity,
+      image
+    } = cartItem;
 
-      return {
-        name: name || "Unknown Product",
-        price: price || 0,
-        quantity: quantity || 1,
-        purity: purity || null,
-        image: image || null,
-      };
-    });
-
+    const itemTotal = (price || 0) * (quantity || 1);
+    const subtotal = itemTotal;
+    const shipping = 0;
     const totalAmount = subtotal + shipping;
+
+    const orderSummary = [{
+      name: name || "Unknown Product",
+      price: price || 0,
+      quantity: quantity || 1,
+      purity: purity || null,
+      image: image || null,
+    }];
 
     // ✅ 4. Create order
     await db.collection("orders").add({
@@ -195,13 +197,11 @@ router.post("/checkout", async (req, res) => {
       paymentMethod,
       expectedDelivery,
       orderDate: new Date().toISOString(),
-      status: "processing", // default
+      status: "processing",
     });
 
-    // ✅ 5. Clear cart
-    const batch = db.batch();
-    cartSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
-    await batch.commit();
+    // ✅ 5. Delete cart item
+    await db.collection("carts").doc(cartId).delete();
 
     res.status(200).json({ message: "Order placed successfully" });
 
@@ -210,6 +210,7 @@ router.post("/checkout", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 router.post('/update-status', async (req, res) => {
   const { orderId, status } = req.body;
   try {
