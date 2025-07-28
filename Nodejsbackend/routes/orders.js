@@ -124,6 +124,29 @@ router.get('/cartlist/:userId', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch cart items' });
   }
 });
+router.delete('/cartdelete/:cartId', async (req, res) => {
+  const { cartId } = req.params;
+
+  if (!cartId) {
+    return res.status(400).json({ message: 'Cart ID is required' });
+  }
+
+  try {
+    const cartRef = db.collection('carts').doc(cartId);
+    const cartDoc = await cartRef.get();
+
+    if (!cartDoc.exists) {
+      return res.status(404).json({ message: 'Cart item not found' });
+    }
+
+    await cartRef.delete();
+
+    return res.status(200).json({ message: 'Cart item deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting cart item:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 
 
