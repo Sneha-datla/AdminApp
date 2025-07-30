@@ -1,41 +1,35 @@
-// routes/product.js
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
-const { db } = require("../firebase"); // make sure this points to your Firestore setup
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../config/cloudinary");
+const { db } = require("../firebase");
 
 const router = express.Router();
 
-// 🧪 Test route
+// ✅ Test route
 router.get("/", (req, res) => {
   res.send("Product route working");
 });
 
-// ✅ Create uploads directory if not exists
-const uploadDir = "uploads/";
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-// ✅ Setup multer storage config
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
+// ✅ Multer storage for Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "products", // Optional folder name in Cloudinary
+    allowed_formats: ["jpg", "png", "jpeg", "webp"],
+    public_id: (req, file) => Date.now() + "-" + file.originalname,
   },
 });
+
 const upload = multer({ storage });
 
-// ✅ Add a product with image upload
+// ✅ Add product with Cloudinary image upload
 router.post("/add", upload.array("image_urls", 10), async (req, res) => {
   const { productId, title, purity, price, stock, featured } = req.body;
   const files = req.files || [];
 
   try {
-    const imagePaths = files.map((file) => `/uploads/${file.filename}`);
+    const imageUrls = files.map(file => file.path); // Cloudinary hosted URLs
 
     const productData = {
       productId,
@@ -44,7 +38,7 @@ router.post("/add", upload.array("image_urls", 10), async (req, res) => {
       price: parseFloat(price),
       stock: parseInt(stock),
       featured: featured === "true",
-      image_urls: imagePaths,
+      image_urls: imageUrls,
       createdAt: new Date().toISOString(),
     };
 
@@ -77,9 +71,15 @@ router.get("/all", async (req, res) => {
   }
 });
 
-// ✅ Delete product by Firestore document ID
+// ✅ Delete product and remove images from Cloudinary
 router.delete("/:id", async (req, res) => {
   const id = req.params.id;
+
+  const getPublicIdFromUrl = (url) => {
+    const parts = url.split("/");
+    const filename = parts[parts.length - 1].split(".")[0]; // without extension
+    return `products/${filename}`;
+  };
 
   try {
     const docRef = db.collection("products").doc(id);
@@ -92,15 +92,13 @@ router.delete("/:id", async (req, res) => {
     const product = doc.data();
     const imageUrls = product.image_urls || [];
 
-    // Delete image files from local filesystem
-    imageUrls.forEach((url) => {
-      const filePath = path.join(".", url); // e.g., './uploads/filename.jpg'
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    });
+    // ✅ Delete images from Cloudinary
+    await Promise.all(imageUrls.map((url) => {
+      const publicId = getPublicIdFromUrl(url);
+      return cloudinary.uploader.destroy(publicId);
+    }));
 
-    // Delete product document
+    // ✅ Delete product from Firestore
     await docRef.delete();
 
     res.status(200).json({ message: "Product deleted successfully" });
