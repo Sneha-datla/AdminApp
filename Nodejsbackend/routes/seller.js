@@ -1,25 +1,25 @@
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
-const { db } = require("../firebase"); // Make sure firebase.js exports { db }
-
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const { db } = require("../firebase");
+const cloudinary = require("../cloudinary"); // Cloudinary config
 const router = express.Router();
 
-const uploadDir = "uploads/";
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-// 🔧 Multer Setup
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+// ✅ Setup Cloudinary storage with multer
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "seller",
+    allowed_formats: ["jpg", "png", "jpeg", "webp"],
+    public_id: (req, file) => `${Date.now()}-${file.originalname}`,
+  },
 });
+
 const upload = multer({ storage });
 
 /**
  * 🔹 POST /sellergold/add
- * Adds seller gold with multiple images
+ * Add a new product with image uploads to Cloudinary
  */
 router.post("/add", upload.array("images", 10), async (req, res) => {
   const {
@@ -29,13 +29,20 @@ router.post("/add", upload.array("images", 10), async (req, res) => {
     purity,
     condition,
     price,
-    description
+    description,
   } = req.body;
 
   const files = req.files || [];
 
+  if (files.length === 0) {
+    return res.status(400).json({ error: "No images uploaded" });
+  }
+
   try {
-    const imagePaths = files.map(file => `/uploads/${file.filename}`);
+    const imageData = files.map(file => ({
+      url: file.path,           // ✅ Cloudinary hosted URL
+      public_id: file.filename, // ✅ Cloudinary public_id (for deletion)
+    }));
 
     const newDoc = {
       name,
@@ -45,7 +52,7 @@ router.post("/add", upload.array("images", 10), async (req, res) => {
       condition,
       price: parseFloat(price),
       description,
-      images: imagePaths,
+      images: imageData,
       createdAt: new Date().toISOString(),
     };
 
@@ -54,7 +61,7 @@ router.post("/add", upload.array("images", 10), async (req, res) => {
     res.status(201).json({
       message: "Seller gold product added successfully",
       id: docRef.id,
-      data: newDoc
+      data: newDoc,
     });
   } catch (err) {
     console.error("Error adding seller gold:", err.message);
@@ -69,10 +76,9 @@ router.post("/add", upload.array("images", 10), async (req, res) => {
 router.get("/all", async (req, res) => {
   try {
     const snapshot = await db.collection("sellergold").orderBy("createdAt", "desc").get();
-
     const results = snapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
 
     res.status(200).json(results);
@@ -84,7 +90,7 @@ router.get("/all", async (req, res) => {
 
 /**
  * 🔹 DELETE /sellergold/:id
- * Deletes a product and its images from disk
+ * Deletes a product and its Cloudinary images
  */
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
@@ -99,13 +105,16 @@ router.delete("/:id", async (req, res) => {
 
     const { images = [] } = doc.data();
 
-    // Delete images from filesystem
-    images.forEach((imgPath) => {
-      const filePath = imgPath.replace("/uploads/", "uploads/");
-      fs.unlink(filePath, (err) => {
-        if (err) console.warn("Image delete failed:", filePath, err.message);
-      });
-    });
+    // Delete images from Cloudinary
+    await Promise.all(
+      images.map(async (img) => {
+        try {
+          await cloudinary.uploader.destroy(img.public_id);
+        } catch (err) {
+          console.warn("Failed to delete Cloudinary image:", img.public_id, err.message);
+        }
+      })
+    );
 
     // Delete Firestore document
     await docRef.delete();
