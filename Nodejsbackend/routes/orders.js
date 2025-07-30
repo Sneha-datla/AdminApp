@@ -58,7 +58,7 @@ router.get('/list/:userId', async (req, res) => {
 // ✅ GET /orders/all (Fetch all orders from Firestore)
 router.get("/all", async (req, res) => {
   try {
-    const snapshot = await db.collection("orders").orderBy("createdAt", "desc").get();
+const snapshot = await db.collection("orders").get();
 
     const orders = snapshot.docs.map((doc) => ({
       id: doc.id,
