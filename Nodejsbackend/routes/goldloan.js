@@ -2,20 +2,21 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const { db } = require("../firebase"); // Firestore instance
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../cloudinary"); // Cloudinary config
 
 const router = express.Router();
 
-// Ensure uploads directory exists
-const uploadDir = "uploads/";
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-// Multer storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+// ✅ Setup Cloudinary storage with multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "seller",
+    allowed_formats: ["jpg", "png", "jpeg", "webp"],
+    public_id: (req, file) => `${Date.now()}-${file.originalname}`,
+  },
 });
+
 const upload = multer({ storage });
 
 /**
@@ -36,7 +37,7 @@ router.post("/add", upload.array("image", 5), async (req, res) => {
       remarks
     } = req.body;
 
-    const imagePaths = req.files.map(file => `/${file.path.replace(/\\/g, "/")}`);
+    const imagePaths = files.map(file => file.path);
 
     const newRequest = {
       image: imagePaths,
@@ -98,14 +99,15 @@ router.delete("/:id", async (req, res) => {
     const { image = [] } = doc.data();
 
     // Delete image files from disk
-    image.forEach((filePath) => {
-      const localPath = filePath.replace("/uploads/", "uploads/");
-      fs.unlink(localPath, (err) => {
-        if (err) {
-          console.warn("Failed to delete image:", localPath, err.message);
-        }
-      });
-    });
+    await Promise.all(
+        images.map(async (img) => {
+          try {
+            await cloudinary.uploader.destroy(img.public_id);
+          } catch (err) {
+            console.warn("Failed to delete Cloudinary image:", img.public_id, err.message);
+          }
+        })
+      );
 
     // Delete Firestore document
     await docRef.delete();
