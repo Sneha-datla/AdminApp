@@ -11,7 +11,7 @@ const router = express.Router();
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "seller",
+    folder: "goldloan",
     allowed_formats: ["jpg", "png", "jpeg", "webp"],
     public_id: (req, file) => `${Date.now()}-${file.originalname}`,
   },
