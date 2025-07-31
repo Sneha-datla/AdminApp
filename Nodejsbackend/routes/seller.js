@@ -39,10 +39,7 @@ router.post("/add", upload.array("images", 10), async (req, res) => {
   }
 
   try {
-    const imageData = files.map(file => ({
-      url: file.path,           // ✅ Cloudinary hosted URL
-      public_id: file.filename, // ✅ Cloudinary public_id (for deletion)
-    }));
+    const imageData = files.map(file => file.path);
 
     const newDoc = {
       name,
@@ -75,7 +72,7 @@ router.post("/add", upload.array("images", 10), async (req, res) => {
  */
 router.get("/all", async (req, res) => {
   try {
-    const snapshot = await db.collection("sellergold").orderBy("createdAt", "desc").get();
+    const snapshot = await db.collection("sellergold").get();
     const results = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
