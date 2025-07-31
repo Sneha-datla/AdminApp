@@ -1,6 +1,5 @@
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
 const { db } = require("../firebase"); // Firestore instance
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../cloudinary"); // Cloudinary config
@@ -24,7 +23,7 @@ const upload = multer({ storage });
  * Add new gold loan request
  */
 router.post("/add", upload.array("image", 5), async (req, res) => {
-  try {
+ 
     const {
       bank,
       fullname,
@@ -42,6 +41,7 @@ const files = req.files || [];
   if (files.length === 0) {
     return res.status(400).json({ error: "No images uploaded" });
   }
+   try {
     const imagePaths = files.map(file => file.path);
 
     const newRequest = {
