@@ -105,7 +105,7 @@ router.delete("/:id", async (req, res) => {
 
     // Delete image files from disk
     await Promise.all(
-        images.map(async (img) => {
+        image.map(async (img) => {
           try {
             await cloudinary.uploader.destroy(img.public_id);
           } catch (err) {
