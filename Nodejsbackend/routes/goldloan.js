@@ -1,14 +1,14 @@
 const express = require("express");
 const multer = require("multer");
+const { db } = require("../firebase"); // Firestore instance
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const cloudinary = require("../cloudinary");
-const pool = require("../db");
+const cloudinary = require("../cloudinary"); // Cloudinary config
 
 const router = express.Router();
 
-// Cloudinary storage config
+// ✅ Setup Cloudinary storage with multer
 const storage = new CloudinaryStorage({
-  cloudinary,
+  cloudinary: cloudinary,
   params: {
     folder: "goldloan",
     allowed_formats: ["jpg", "png", "jpeg", "webp"],
@@ -19,41 +19,12 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 /**
- * POST /goldloan/add
+ * 🔹 POST /goldloan/add
+ * Add new gold loan request
  */
 router.post("/add", upload.array("image", 5), async (req, res) => {
-  const {
-    bank,
-    fullname,
-    mobile,
-    address,
-    goldweight,
-    goldtype,
-    idproof,
-    loanamount,
-    remarks,
-  } = req.body;
-
-  const files = req.files || [];
-  if (files.length === 0) {
-    return res.status(400).json({ error: "No images uploaded" });
-  }
-
-  const imagePaths = files.map((file) => file.path);
-
-  try {
-    const query = `
-      INSERT INTO goldloanrequest (
-        image, bank, fullname, mobile, address,
-        goldweight, goldtype, idproof, loanamount, remarks, created_at
-      ) VALUES (
-        $1, $2, $3, $4, $5,
-        $6, $7, $8, $9, $10, NOW()
-      ) RETURNING *;
-    `;
-
-    const values = [
-      imagePaths,
+ 
+    const {
       bank,
       fullname,
       mobile,
@@ -61,67 +32,94 @@ router.post("/add", upload.array("image", 5), async (req, res) => {
       goldweight,
       goldtype,
       idproof,
-      parseFloat(loanamount),
-      remarks,
-    ];
+      loanamount,
+      remarks
+    } = req.body;
+    
+const files = req.files || [];
 
-    const result = await pool.query(query, values);
+  if (files.length === 0) {
+    return res.status(400).json({ error: "No images uploaded" });
+  }
+   try {
+    const imagePaths = files.map(file => file.path);
+
+    const newRequest = {
+      image: imagePaths,
+      bank,
+      fullname,
+      mobile,
+      address,
+      goldweight,
+      goldtype,
+      idproof,
+      loanamount: parseFloat(loanamount),
+      remarks,
+      createdAt: new Date().toISOString(),
+    };
+
+    const docRef = await db.collection("goldloanrequest").add(newRequest);
 
     res.status(201).json({
       message: "Gold loan request added successfully",
-      data: result.rows[0],
+      id: docRef.id,
+      data: newRequest,
     });
   } catch (err) {
-    console.error("DB Insert Error:", err);
+    console.error("Error inserting gold loan request:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
 /**
- * GET /goldloan/all
+ * 🔹 GET /goldloan/all
+ * Fetch all gold loan requests
  */
 router.get("/all", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM goldloanrequest ORDER BY created_at ASC");
-    res.status(200).json(result.rows);
+    const snapshot = await db.collection("goldloanrequest").orderBy("createdAt", "asc").get();
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.status(200).json(data);
   } catch (err) {
-    console.error("Fetch Error:", err);
+    console.error("Error fetching gold loan requests:", err);
     res.status(500).json({ error: "Failed to fetch records" });
   }
 });
 
 /**
- * DELETE /goldloan/:id
+ * 🔹 DELETE /goldloan/:id
+ * Delete a gold loan request and its images
  */
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const selectQuery = "SELECT * FROM goldloanrequest WHERE id = $1";
-    const selectResult = await pool.query(selectQuery, [id]);
+    const docRef = db.collection("goldloanrequest").doc(id);
+    const doc = await docRef.get();
 
-    if (selectResult.rows.length === 0) {
+    if (!doc.exists) {
       return res.status(404).json({ error: "Record not found" });
     }
 
-    const images = selectResult.rows[0].image || [];
+    const { image = [] } = doc.data();
 
+    // Delete image files from disk
     await Promise.all(
-      images.map(async (imgUrl) => {
-        const publicId = imgUrl.split("/").pop().split(".")[0];
-        try {
-          await cloudinary.uploader.destroy(`goldloan/${publicId}`);
-        } catch (err) {
-          console.warn("Cloudinary delete failed:", err.message);
-        }
-      })
-    );
+        image.map(async (img) => {
+          try {
+            await cloudinary.uploader.destroy(img.public_id);
+          } catch (err) {
+            console.warn("Failed to delete Cloudinary image:", img.public_id, err.message);
+          }
+        })
+      );
 
-    await pool.query("DELETE FROM goldloanrequest WHERE id = $1", [id]);
+    // Delete Firestore document
+    await docRef.delete();
 
     res.status(200).json({ message: "Gold loan request deleted successfully" });
   } catch (err) {
-    console.error("Delete Error:", err);
+    console.error("Error deleting record:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
